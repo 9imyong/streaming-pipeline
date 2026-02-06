@@ -1,98 +1,111 @@
 """
-Stream 상태 머신: 상태(State) + 허용 전이(Transition).
-
-- desired_state: 사용자/API가 원하는 상태 (RUNNING, STOPPED)
-- status: 실제 현재 상태 (워커/오케스트레이터가 보고)
-- lease: 특정 워커가 해당 채널을 점유한 경우에만 RUNNING 유지 가능.
+CCTV 스트리밍 도메인: 상태 머신 + 전이 규칙 (Single Source of Truth).
+- Kafka, DB, subprocess 접근 금지. 순수 Python.
 """
+
 from enum import Enum
 from typing import Set, Tuple
 
-# ---------------------------------------------------------------------------
-# 상태 정의
-# ---------------------------------------------------------------------------
+# =============================================================================
+# 1. 상태 정의
+# =============================================================================
 
 
-class StreamStatus(str, Enum):
-    """실제 스트림 상태 (DB status 컬럼)."""
-    IDLE = "idle"                     # 초기/미할당
-    STARTING = "starting"             # 명령 수신, 워커 할당 대기 또는 파이프라인 기동 중
-    RUNNING = "running"               # 파이프라인 실행 중, heartbeat 수신
-    STOPPING = "stopping"             # 중지 명령 처리 중
-    STOPPED = "stopped"               # 정상 종료
-    FAILED = "failed"                 # 오류로 종료, last_error 기록
-    LOST = "lost"                     # lease 만료 등으로 워커 응답 없음 (takeover 대상)
+class StreamState(str, Enum):
+    """스트림 실제 상태 (DB status 등에 저장)."""
+    PENDING = "pending"      # 시작 요청됨, 워커 할당 대기
+    ASSIGNED = "assigned"    # 워커 할당됨, 파이프라인 기동 중
+    RUNNING = "running"      # 파이프라인 실행 중
+    FAILED = "failed"       # 오류로 종료
+    STOPPED = "stopped"      # 정상 중지됨
 
 
 class DesiredState(str, Enum):
-    """사용자가 원하는 상태 (DB desired_state)."""
+    """사용자가 원하는 상태 (API: RUNNING=시작 요청, STOPPED=중지 요청)."""
     RUNNING = "running"
     STOPPED = "stopped"
 
 
-# ---------------------------------------------------------------------------
-# 허용 전이 (from_status -> to_status)
-# ---------------------------------------------------------------------------
+# =============================================================================
+# 2. 허용 전이 (한 눈에 보는 규칙)
+# =============================================================================
+#
+#   PENDING ──(할당)──► ASSIGNED
+#      │                    │
+#      │                    ├──(기동 성공)──► RUNNING
+#      │                    ├──(기동 실패)──► FAILED
+#      │                    └──(중지 명령)──► STOPPED
+#      │
+#      └──(중지/취소)──► STOPPED
+#
+#   RUNNING ──(중지)──► STOPPED
+#      │
+#      └──(오류)──────► FAILED
+#
+#   FAILED ──(재시도)──► PENDING
+#      │
+#      └──(정리)──────► STOPPED
+#
+#   STOPPED ──(재시작)──► PENDING
+#
+# =============================================================================
 
-ALLOWED_TRANSITIONS: Set[Tuple[StreamStatus, StreamStatus]] = {
-    # IDLE: 오직 STARTING 또는 STOPPED 로만 진입; STARTING 또는 유지
-    (StreamStatus.IDLE, StreamStatus.STARTING),
-    (StreamStatus.IDLE, StreamStatus.IDLE),
-    # STARTING: RUNNING(성공), FAILED(실패), STOPPING(중지 요청)
-    (StreamStatus.STARTING, StreamStatus.RUNNING),
-    (StreamStatus.STARTING, StreamStatus.FAILED),
-    (StreamStatus.STARTING, StreamStatus.STOPPING),
-    # RUNNING: STOPPING, FAILED, LOST(heartbeat 끊김)
-    (StreamStatus.RUNNING, StreamStatus.STOPPING),
-    (StreamStatus.RUNNING, StreamStatus.FAILED),
-    (StreamStatus.RUNNING, StreamStatus.LOST),
-    (StreamStatus.RUNNING, StreamStatus.RUNNING),  # heartbeat 갱신
-    # STOPPING: STOPPED, FAILED
-    (StreamStatus.STOPPING, StreamStatus.STOPPED),
-    (StreamStatus.STOPPING, StreamStatus.FAILED),
-    # STOPPED: STARTING(재시작)
-    (StreamStatus.STOPPED, StreamStatus.STARTING),
-    (StreamStatus.STOPPED, StreamStatus.STOPPED),
-    # FAILED: STARTING(재시도), STOPPED(수동 정리)
-    (StreamStatus.FAILED, StreamStatus.STARTING),
-    (StreamStatus.FAILED, StreamStatus.STOPPED),
-    # LOST: STARTING(다른 워커가 takeover)
-    (StreamStatus.LOST, StreamStatus.STARTING),
-    (StreamStatus.LOST, StreamStatus.LOST),
+ALLOWED_TRANSITIONS: Set[Tuple[StreamState, StreamState]] = {
+    (StreamState.PENDING, StreamState.ASSIGNED),
+    (StreamState.PENDING, StreamState.STOPPED),
+    (StreamState.PENDING, StreamState.PENDING),
+    (StreamState.ASSIGNED, StreamState.RUNNING),
+    (StreamState.ASSIGNED, StreamState.FAILED),
+    (StreamState.ASSIGNED, StreamState.STOPPED),
+    (StreamState.ASSIGNED, StreamState.ASSIGNED),
+    (StreamState.RUNNING, StreamState.STOPPED),
+    (StreamState.RUNNING, StreamState.FAILED),
+    (StreamState.RUNNING, StreamState.RUNNING),  # heartbeat 갱신
+    (StreamState.FAILED, StreamState.PENDING),
+    (StreamState.FAILED, StreamState.STOPPED),
+    (StreamState.FAILED, StreamState.FAILED),
+    (StreamState.STOPPED, StreamState.PENDING),
+    (StreamState.STOPPED, StreamState.STOPPED),
 }
 
 
-def can_transition(from_status: StreamStatus, to_status: StreamStatus) -> bool:
-    """허용된 전이인지 검사 (DB/오케스트레이터에서 사용)."""
-    return (from_status, to_status) in ALLOWED_TRANSITIONS
+# =============================================================================
+# 3. 전이 검증
+# =============================================================================
 
 
-def transition_or_raise(from_status: StreamStatus, to_status: StreamStatus) -> None:
-    """허용되지 않은 전이면 ValueError."""
-    if not can_transition(from_status, to_status):
-        raise ValueError(
-            f"Invalid stream transition: {from_status.value} -> {to_status.value}"
+def can_transition(from_state: StreamState, to_state: StreamState) -> bool:
+    """허용된 전이인지 검사."""
+    return (from_state, to_state) in ALLOWED_TRANSITIONS
+
+
+def validate_transition(from_state: StreamState, to_state: StreamState) -> None:
+    """
+    허용된 전이만 허용. 아니면 도메인 에러 발생.
+    오케스트레이터/인프라에서 상태 갱신 전에 호출.
+    """
+    if not can_transition(from_state, to_state):
+        from app.domain.errors import InvalidTransitionError
+        raise InvalidTransitionError(
+            from_state=from_state.value,
+            to_state=to_state.value,
         )
 
 
-# ---------------------------------------------------------------------------
-# 표: 상태 전이 (문서용)
-# ---------------------------------------------------------------------------
-#
-# | 현재 상태  | 다음 상태   | 트리거 / 비고 |
-# |------------|------------|----------------|
-# | IDLE       | STARTING   | START 명령 수신, lease 할당 |
-# | IDLE       | IDLE       | (유지) |
-# | STARTING   | RUNNING    | stream.events STARTED 수신 |
-# | STARTING   | FAILED     | stream.events FAILED 또는 타임아웃 |
-# | STARTING   | STOPPING   | STOP 명령 수신 |
-# | RUNNING    | STOPPING   | STOP 명령 수신 |
-# | RUNNING    | FAILED     | stream.events FAILED |
-# | RUNNING    | LOST       | lease_expires_at 경과, heartbeat 없음 |
-# | RUNNING    | RUNNING    | HEARTBEAT 수신 (갱신만) |
-# | STOPPING   | STOPPED    | stream.events STOPPED |
-# | STOPPING   | FAILED     | 정리 중 오류 |
-# | STOPPED    | STARTING   | START 명령 (재시작) |
-# | FAILED     | STARTING   | RESTART 명령 (backoff 후) |
-# | FAILED     | STOPPED    | 수동 정리 |
-# | LOST       | STARTING   | Orchestrator가 다른 워커에 재할당 (takeover) |
+def transition_or_raise(from_state: StreamState, to_state: StreamState) -> None:
+    """validate_transition 별칭 (기존 호환)."""
+    validate_transition(from_state, to_state)
+
+
+# =============================================================================
+# 4. desired_state vs 현재 상태 (규칙)
+# =============================================================================
+
+
+def is_desired_satisfied(current: StreamState, desired: DesiredState) -> bool:
+    """현재 상태가 desired_state를 만족하는지."""
+    if desired == DesiredState.RUNNING:
+        return current == StreamState.RUNNING
+    if desired == DesiredState.STOPPED:
+        return current in (StreamState.STOPPED, StreamState.PENDING, StreamState.FAILED)
+    return False
