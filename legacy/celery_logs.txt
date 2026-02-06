@@ -1,0 +1,1320 @@
+2024-06-10 17:49:46,508 - celery.utils.functional - DEBUG - 
+def chunks(task, it, n):
+    return 1
+
+2024-06-10 17:49:46,509 - celery.utils.functional - DEBUG - 
+def test(cctv_no, cctv_id, url):
+    return 1
+
+2024-06-10 17:49:46,509 - celery.utils.functional - DEBUG - 
+def unlock_chord(self, group_id, callback, interval=0, max_retries=1, result=2, Result=3, GroupResult=4, result_from_tuple=5, **kwargs):
+    return 1
+
+2024-06-10 17:49:46,510 - celery.utils.functional - DEBUG - 
+def group(self, tasks, result, group_id, partial_args, add_to_parent=0):
+    return 1
+
+2024-06-10 17:49:46,510 - celery.utils.functional - DEBUG - 
+def live_celery(cctv_id, url):
+    return 1
+
+2024-06-10 17:49:46,510 - celery.utils.functional - DEBUG - 
+def xmap(task, it):
+    return 1
+
+2024-06-10 17:49:46,510 - celery.utils.functional - DEBUG - 
+def chain(*args, **kwargs):
+    return 1
+
+2024-06-10 17:49:46,511 - celery.utils.functional - DEBUG - 
+def xstarmap(task, it):
+    return 1
+
+2024-06-10 17:49:46,511 - celery.utils.functional - DEBUG - 
+def backend_cleanup():
+    return 1
+
+2024-06-10 17:49:46,511 - celery.utils.functional - DEBUG - 
+def chord(self, header, body, partial_args=0, interval=1, countdown=2, max_retries=3, eager=4, **kwargs):
+    return 1
+
+2024-06-10 17:49:46,511 - celery.utils.functional - DEBUG - 
+def accumulate(self, *args, **kwargs):
+    return 1
+
+2024-06-10 17:51:01,996 - celery.utils.functional - DEBUG - 
+def chunks(task, it, n):
+    return 1
+
+2024-06-10 17:51:01,996 - celery.utils.functional - DEBUG - 
+def test(cctv_no, cctv_id, url):
+    return 1
+
+2024-06-10 17:51:01,997 - celery.utils.functional - DEBUG - 
+def unlock_chord(self, group_id, callback, interval=0, max_retries=1, result=2, Result=3, GroupResult=4, result_from_tuple=5, **kwargs):
+    return 1
+
+2024-06-10 17:51:01,997 - celery.utils.functional - DEBUG - 
+def group(self, tasks, result, group_id, partial_args, add_to_parent=0):
+    return 1
+
+2024-06-10 17:51:01,997 - celery.utils.functional - DEBUG - 
+def live_celery(cctv_id, url):
+    return 1
+
+2024-06-10 17:51:01,998 - celery.utils.functional - DEBUG - 
+def xmap(task, it):
+    return 1
+
+2024-06-10 17:51:01,998 - celery.utils.functional - DEBUG - 
+def chain(*args, **kwargs):
+    return 1
+
+2024-06-10 17:51:01,998 - celery.utils.functional - DEBUG - 
+def xstarmap(task, it):
+    return 1
+
+2024-06-10 17:51:01,998 - celery.utils.functional - DEBUG - 
+def backend_cleanup():
+    return 1
+
+2024-06-10 17:51:01,999 - celery.utils.functional - DEBUG - 
+def chord(self, header, body, partial_args=0, interval=1, countdown=2, max_retries=3, eager=4, **kwargs):
+    return 1
+
+2024-06-10 17:51:01,999 - celery.utils.functional - DEBUG - 
+def accumulate(self, *args, **kwargs):
+    return 1
+
+2024-06-10 17:51:17,441 - celery.utils.functional - DEBUG - 
+def live_celery(cctv_id, url):
+    return 1
+
+2024-06-10 18:00:00,555 - celery.utils.functional - DEBUG - 
+def chunks(task, it, n):
+    return 1
+
+2024-06-10 18:00:00,556 - celery.utils.functional - DEBUG - 
+def test(cctv_no, cctv_id, url):
+    return 1
+
+2024-06-10 18:00:00,556 - celery.utils.functional - DEBUG - 
+def unlock_chord(self, group_id, callback, interval=0, max_retries=1, result=2, Result=3, GroupResult=4, result_from_tuple=5, **kwargs):
+    return 1
+
+2024-06-10 18:00:00,557 - celery.utils.functional - DEBUG - 
+def group(self, tasks, result, group_id, partial_args, add_to_parent=0):
+    return 1
+
+2024-06-10 18:00:00,557 - celery.utils.functional - DEBUG - 
+def live_celery(cctv_id, url):
+    return 1
+
+2024-06-10 18:00:00,557 - celery.utils.functional - DEBUG - 
+def xmap(task, it):
+    return 1
+
+2024-06-10 18:00:00,558 - celery.utils.functional - DEBUG - 
+def chain(*args, **kwargs):
+    return 1
+
+2024-06-10 18:00:00,558 - celery.utils.functional - DEBUG - 
+def xstarmap(task, it):
+    return 1
+
+2024-06-10 18:00:00,558 - celery.utils.functional - DEBUG - 
+def backend_cleanup():
+    return 1
+
+2024-06-10 18:00:00,558 - celery.utils.functional - DEBUG - 
+def chord(self, header, body, partial_args=0, interval=1, countdown=2, max_retries=3, eager=4, **kwargs):
+    return 1
+
+2024-06-10 18:00:00,559 - celery.utils.functional - DEBUG - 
+def accumulate(self, *args, **kwargs):
+    return 1
+
+2024-06-10 18:14:33,450 - celery.utils.functional - DEBUG - 
+def chunks(task, it, n):
+    return 1
+
+2024-06-10 18:14:33,450 - celery.utils.functional - DEBUG - 
+def test(cctv_no, cctv_id, url):
+    return 1
+
+2024-06-10 18:14:33,450 - celery.utils.functional - DEBUG - 
+def unlock_chord(self, group_id, callback, interval=0, max_retries=1, result=2, Result=3, GroupResult=4, result_from_tuple=5, **kwargs):
+    return 1
+
+2024-06-10 18:14:33,451 - celery.utils.functional - DEBUG - 
+def group(self, tasks, result, group_id, partial_args, add_to_parent=0):
+    return 1
+
+2024-06-10 18:14:33,451 - celery.utils.functional - DEBUG - 
+def live_celery(cctv_id, url):
+    return 1
+
+2024-06-10 18:14:33,451 - celery.utils.functional - DEBUG - 
+def xmap(task, it):
+    return 1
+
+2024-06-10 18:14:33,451 - celery.utils.functional - DEBUG - 
+def chain(*args, **kwargs):
+    return 1
+
+2024-06-10 18:14:33,452 - celery.utils.functional - DEBUG - 
+def xstarmap(task, it):
+    return 1
+
+2024-06-10 18:14:33,452 - celery.utils.functional - DEBUG - 
+def backend_cleanup():
+    return 1
+
+2024-06-10 18:14:33,452 - celery.utils.functional - DEBUG - 
+def chord(self, header, body, partial_args=0, interval=1, countdown=2, max_retries=3, eager=4, **kwargs):
+    return 1
+
+2024-06-10 18:14:33,452 - celery.utils.functional - DEBUG - 
+def accumulate(self, *args, **kwargs):
+    return 1
+
+2024-06-10 18:25:38,718 - celery.utils.functional - DEBUG - 
+def live_celery(cctv_id, url):
+    return 1
+
+2024-06-10 18:30:29,987 - celery.utils.functional - DEBUG - 
+def chunks(task, it, n):
+    return 1
+
+2024-06-10 18:30:29,987 - celery.utils.functional - DEBUG - 
+def unlock_chord(self, group_id, callback, interval=0, max_retries=1, result=2, Result=3, GroupResult=4, result_from_tuple=5, **kwargs):
+    return 1
+
+2024-06-10 18:30:29,987 - celery.utils.functional - DEBUG - 
+def live_celery(cctv_id, url):
+    return 1
+
+2024-06-10 18:30:29,988 - celery.utils.functional - DEBUG - 
+def group(self, tasks, result, group_id, partial_args, add_to_parent=0):
+    return 1
+
+2024-06-10 18:30:29,988 - celery.utils.functional - DEBUG - 
+def test(cctv_no, cctv_id, url):
+    return 1
+
+2024-06-10 18:30:29,988 - celery.utils.functional - DEBUG - 
+def xmap(task, it):
+    return 1
+
+2024-06-10 18:30:29,988 - celery.utils.functional - DEBUG - 
+def chain(*args, **kwargs):
+    return 1
+
+2024-06-10 18:30:29,989 - celery.utils.functional - DEBUG - 
+def xstarmap(task, it):
+    return 1
+
+2024-06-10 18:30:29,989 - celery.utils.functional - DEBUG - 
+def backend_cleanup():
+    return 1
+
+2024-06-10 18:30:29,989 - celery.utils.functional - DEBUG - 
+def chord(self, header, body, partial_args=0, interval=1, countdown=2, max_retries=3, eager=4, **kwargs):
+    return 1
+
+2024-06-10 18:30:29,989 - celery.utils.functional - DEBUG - 
+def accumulate(self, *args, **kwargs):
+    return 1
+
+2024-06-10 18:32:13,596 - celery.utils.functional - DEBUG - 
+def live_celery(cctv_id, url):
+    return 1
+
+2024-06-10 18:34:11,742 - celery.utils.functional - DEBUG - 
+def chunks(task, it, n):
+    return 1
+
+2024-06-10 18:34:11,743 - celery.utils.functional - DEBUG - 
+def unlock_chord(self, group_id, callback, interval=0, max_retries=1, result=2, Result=3, GroupResult=4, result_from_tuple=5, **kwargs):
+    return 1
+
+2024-06-10 18:34:11,743 - celery.utils.functional - DEBUG - 
+def group(self, tasks, result, group_id, partial_args, add_to_parent=0):
+    return 1
+
+2024-06-10 18:34:11,743 - celery.utils.functional - DEBUG - 
+def test(cctv_no, cctv_id, url):
+    return 1
+
+2024-06-10 18:34:11,744 - celery.utils.functional - DEBUG - 
+def xmap(task, it):
+    return 1
+
+2024-06-10 18:34:11,744 - celery.utils.functional - DEBUG - 
+def chain(*args, **kwargs):
+    return 1
+
+2024-06-10 18:34:11,744 - celery.utils.functional - DEBUG - 
+def xstarmap(task, it):
+    return 1
+
+2024-06-10 18:34:11,744 - celery.utils.functional - DEBUG - 
+def backend_cleanup():
+    return 1
+
+2024-06-10 18:34:11,745 - celery.utils.functional - DEBUG - 
+def chord(self, header, body, partial_args=0, interval=1, countdown=2, max_retries=3, eager=4, **kwargs):
+    return 1
+
+2024-06-10 18:34:11,745 - celery.utils.functional - DEBUG - 
+def accumulate(self, *args, **kwargs):
+    return 1
+
+2024-06-10 18:34:11,745 - celery.utils.functional - DEBUG - 
+def live_celery(cctv_id, url):
+    return 1
+
+2024-06-10 18:34:19,825 - celery.utils.functional - DEBUG - 
+def live_celery(cctv_id, url):
+    return 1
+
+2024-06-11 17:35:21,904 - celery.utils.functional - DEBUG - 
+def chunks(task, it, n):
+    return 1
+
+2024-06-11 17:35:21,905 - celery.utils.functional - DEBUG - 
+def unlock_chord(self, group_id, callback, interval=0, max_retries=1, result=2, Result=3, GroupResult=4, result_from_tuple=5, **kwargs):
+    return 1
+
+2024-06-11 17:35:21,905 - celery.utils.functional - DEBUG - 
+def live_celery(cctv_id, url):
+    return 1
+
+2024-06-11 17:35:21,905 - celery.utils.functional - DEBUG - 
+def group(self, tasks, result, group_id, partial_args, add_to_parent=0):
+    return 1
+
+2024-06-11 17:35:21,906 - celery.utils.functional - DEBUG - 
+def xmap(task, it):
+    return 1
+
+2024-06-11 17:35:21,906 - celery.utils.functional - DEBUG - 
+def chain(*args, **kwargs):
+    return 1
+
+2024-06-11 17:35:21,906 - celery.utils.functional - DEBUG - 
+def test(cctv_no, cctv_id, url):
+    return 1
+
+2024-06-11 17:35:21,906 - celery.utils.functional - DEBUG - 
+def xstarmap(task, it):
+    return 1
+
+2024-06-11 17:35:21,907 - celery.utils.functional - DEBUG - 
+def backend_cleanup():
+    return 1
+
+2024-06-11 17:35:21,907 - celery.utils.functional - DEBUG - 
+def chord(self, header, body, partial_args=0, interval=1, countdown=2, max_retries=3, eager=4, **kwargs):
+    return 1
+
+2024-06-11 17:35:21,907 - celery.utils.functional - DEBUG - 
+def accumulate(self, *args, **kwargs):
+    return 1
+
+2024-06-11 17:35:45,851 - celery.utils.functional - DEBUG - 
+def live_celery(cctv_id, url):
+    return 1
+
+2024-06-12 09:17:03,428 - celery.utils.functional - DEBUG - 
+def chunks(task, it, n):
+    return 1
+
+2024-06-12 09:17:03,429 - celery.utils.functional - DEBUG - 
+def unlock_chord(self, group_id, callback, interval=0, max_retries=1, result=2, Result=3, GroupResult=4, result_from_tuple=5, **kwargs):
+    return 1
+
+2024-06-12 09:17:03,429 - celery.utils.functional - DEBUG - 
+def live_celery(cctv_id, url):
+    return 1
+
+2024-06-12 09:17:03,429 - celery.utils.functional - DEBUG - 
+def test(cctv_no, cctv_id, url):
+    return 1
+
+2024-06-12 09:17:03,429 - celery.utils.functional - DEBUG - 
+def group(self, tasks, result, group_id, partial_args, add_to_parent=0):
+    return 1
+
+2024-06-12 09:17:03,430 - celery.utils.functional - DEBUG - 
+def xmap(task, it):
+    return 1
+
+2024-06-12 09:17:03,430 - celery.utils.functional - DEBUG - 
+def chain(*args, **kwargs):
+    return 1
+
+2024-06-12 09:17:03,430 - celery.utils.functional - DEBUG - 
+def xstarmap(task, it):
+    return 1
+
+2024-06-12 09:17:03,430 - celery.utils.functional - DEBUG - 
+def backend_cleanup():
+    return 1
+
+2024-06-12 09:17:03,431 - celery.utils.functional - DEBUG - 
+def chord(self, header, body, partial_args=0, interval=1, countdown=2, max_retries=3, eager=4, **kwargs):
+    return 1
+
+2024-06-12 09:17:03,431 - celery.utils.functional - DEBUG - 
+def accumulate(self, *args, **kwargs):
+    return 1
+
+2024-06-12 09:17:08,837 - celery.utils.functional - DEBUG - 
+def live_celery(cctv_id, url):
+    return 1
+
+2024-06-12 09:56:12,215 - celery.utils.functional - DEBUG - 
+def chunks(task, it, n):
+    return 1
+
+2024-06-12 09:56:12,215 - celery.utils.functional - DEBUG - 
+def live_celery(cctv_id, url):
+    return 1
+
+2024-06-12 09:56:12,215 - celery.utils.functional - DEBUG - 
+def unlock_chord(self, group_id, callback, interval=0, max_retries=1, result=2, Result=3, GroupResult=4, result_from_tuple=5, **kwargs):
+    return 1
+
+2024-06-12 09:56:12,216 - celery.utils.functional - DEBUG - 
+def group(self, tasks, result, group_id, partial_args, add_to_parent=0):
+    return 1
+
+2024-06-12 09:56:12,216 - celery.utils.functional - DEBUG - 
+def xmap(task, it):
+    return 1
+
+2024-06-12 09:56:12,216 - celery.utils.functional - DEBUG - 
+def chain(*args, **kwargs):
+    return 1
+
+2024-06-12 09:56:12,217 - celery.utils.functional - DEBUG - 
+def test(cctv_no, cctv_id, url):
+    return 1
+
+2024-06-12 09:56:12,217 - celery.utils.functional - DEBUG - 
+def xstarmap(task, it):
+    return 1
+
+2024-06-12 09:56:12,217 - celery.utils.functional - DEBUG - 
+def backend_cleanup():
+    return 1
+
+2024-06-12 09:56:12,218 - celery.utils.functional - DEBUG - 
+def chord(self, header, body, partial_args=0, interval=1, countdown=2, max_retries=3, eager=4, **kwargs):
+    return 1
+
+2024-06-12 09:56:12,218 - celery.utils.functional - DEBUG - 
+def accumulate(self, *args, **kwargs):
+    return 1
+
+2024-06-12 09:56:14,601 - celery.utils.functional - DEBUG - 
+def live_celery(cctv_id, url):
+    return 1
+
+2024-06-12 09:57:08,852 - celery.utils.functional - DEBUG - 
+def chunks(task, it, n):
+    return 1
+
+2024-06-12 09:57:08,853 - celery.utils.functional - DEBUG - 
+def unlock_chord(self, group_id, callback, interval=0, max_retries=1, result=2, Result=3, GroupResult=4, result_from_tuple=5, **kwargs):
+    return 1
+
+2024-06-12 09:57:08,853 - celery.utils.functional - DEBUG - 
+def group(self, tasks, result, group_id, partial_args, add_to_parent=0):
+    return 1
+
+2024-06-12 09:57:08,854 - celery.utils.functional - DEBUG - 
+def test(cctv_no, cctv_id, url):
+    return 1
+
+2024-06-12 09:57:08,854 - celery.utils.functional - DEBUG - 
+def xmap(task, it):
+    return 1
+
+2024-06-12 09:57:08,854 - celery.utils.functional - DEBUG - 
+def chain(*args, **kwargs):
+    return 1
+
+2024-06-12 09:57:08,855 - celery.utils.functional - DEBUG - 
+def live_celery(cctv_id, url):
+    return 1
+
+2024-06-12 09:57:08,855 - celery.utils.functional - DEBUG - 
+def xstarmap(task, it):
+    return 1
+
+2024-06-12 09:57:08,855 - celery.utils.functional - DEBUG - 
+def backend_cleanup():
+    return 1
+
+2024-06-12 09:57:08,855 - celery.utils.functional - DEBUG - 
+def chord(self, header, body, partial_args=0, interval=1, countdown=2, max_retries=3, eager=4, **kwargs):
+    return 1
+
+2024-06-12 09:57:08,856 - celery.utils.functional - DEBUG - 
+def accumulate(self, *args, **kwargs):
+    return 1
+
+2024-06-12 09:57:15,527 - celery.utils.functional - DEBUG - 
+def live_celery(cctv_id, url):
+    return 1
+
+2024-06-12 10:37:58,422 - celery.utils.functional - DEBUG - 
+def chunks(task, it, n):
+    return 1
+
+2024-06-12 10:37:58,422 - celery.utils.functional - DEBUG - 
+def test(cctv_no, cctv_id, url):
+    return 1
+
+2024-06-12 10:37:58,422 - celery.utils.functional - DEBUG - 
+def unlock_chord(self, group_id, callback, interval=0, max_retries=1, result=2, Result=3, GroupResult=4, result_from_tuple=5, **kwargs):
+    return 1
+
+2024-06-12 10:37:58,423 - celery.utils.functional - DEBUG - 
+def group(self, tasks, result, group_id, partial_args, add_to_parent=0):
+    return 1
+
+2024-06-12 10:37:58,423 - celery.utils.functional - DEBUG - 
+def xmap(task, it):
+    return 1
+
+2024-06-12 10:37:58,423 - celery.utils.functional - DEBUG - 
+def chain(*args, **kwargs):
+    return 1
+
+2024-06-12 10:37:58,423 - celery.utils.functional - DEBUG - 
+def live_celery(cctv_id, url):
+    return 1
+
+2024-06-12 10:37:58,424 - celery.utils.functional - DEBUG - 
+def xstarmap(task, it):
+    return 1
+
+2024-06-12 10:37:58,424 - celery.utils.functional - DEBUG - 
+def backend_cleanup():
+    return 1
+
+2024-06-12 10:37:58,424 - celery.utils.functional - DEBUG - 
+def chord(self, header, body, partial_args=0, interval=1, countdown=2, max_retries=3, eager=4, **kwargs):
+    return 1
+
+2024-06-12 10:37:58,424 - celery.utils.functional - DEBUG - 
+def accumulate(self, *args, **kwargs):
+    return 1
+
+2024-06-12 10:38:13,891 - celery.utils.functional - DEBUG - 
+def live_celery(cctv_id, url):
+    return 1
+
+2024-06-12 15:07:20,349 - celery.utils.functional - DEBUG - 
+def chunks(task, it, n):
+    return 1
+
+2024-06-12 15:07:20,350 - celery.utils.functional - DEBUG - 
+def test(cctv_no, cctv_id, url):
+    return 1
+
+2024-06-12 15:07:20,350 - celery.utils.functional - DEBUG - 
+def unlock_chord(self, group_id, callback, interval=0, max_retries=1, result=2, Result=3, GroupResult=4, result_from_tuple=5, **kwargs):
+    return 1
+
+2024-06-12 15:07:20,351 - celery.utils.functional - DEBUG - 
+def group(self, tasks, result, group_id, partial_args, add_to_parent=0):
+    return 1
+
+2024-06-12 15:07:20,351 - celery.utils.functional - DEBUG - 
+def xmap(task, it):
+    return 1
+
+2024-06-12 15:07:20,351 - celery.utils.functional - DEBUG - 
+def chain(*args, **kwargs):
+    return 1
+
+2024-06-12 15:07:20,351 - celery.utils.functional - DEBUG - 
+def live_celery(cctv_id, url):
+    return 1
+
+2024-06-12 15:07:20,351 - celery.utils.functional - DEBUG - 
+def xstarmap(task, it):
+    return 1
+
+2024-06-12 15:07:20,352 - celery.utils.functional - DEBUG - 
+def backend_cleanup():
+    return 1
+
+2024-06-12 15:07:20,352 - celery.utils.functional - DEBUG - 
+def chord(self, header, body, partial_args=0, interval=1, countdown=2, max_retries=3, eager=4, **kwargs):
+    return 1
+
+2024-06-12 15:07:20,352 - celery.utils.functional - DEBUG - 
+def accumulate(self, *args, **kwargs):
+    return 1
+
+2024-06-12 15:07:36,224 - celery.utils.functional - DEBUG - 
+def live_celery(cctv_id, url):
+    return 1
+
+2024-06-21 09:13:23,277 - celery.utils.functional - DEBUG - 
+def chunks(task, it, n):
+    return 1
+
+2024-06-21 09:13:23,277 - celery.utils.functional - DEBUG - 
+def test(cctv_no, cctv_id, url):
+    return 1
+
+2024-06-21 09:13:23,277 - celery.utils.functional - DEBUG - 
+def unlock_chord(self, group_id, callback, interval=0, max_retries=1, result=2, Result=3, GroupResult=4, result_from_tuple=5, **kwargs):
+    return 1
+
+2024-06-21 09:13:23,278 - celery.utils.functional - DEBUG - 
+def group(self, tasks, result, group_id, partial_args, add_to_parent=0):
+    return 1
+
+2024-06-21 09:13:23,278 - celery.utils.functional - DEBUG - 
+def xmap(task, it):
+    return 1
+
+2024-06-21 09:13:23,278 - celery.utils.functional - DEBUG - 
+def chain(*args, **kwargs):
+    return 1
+
+2024-06-21 09:13:23,278 - celery.utils.functional - DEBUG - 
+def live_celery(cctv_id, url):
+    return 1
+
+2024-06-21 09:13:23,279 - celery.utils.functional - DEBUG - 
+def xstarmap(task, it):
+    return 1
+
+2024-06-21 09:13:23,279 - celery.utils.functional - DEBUG - 
+def backend_cleanup():
+    return 1
+
+2024-06-21 09:13:23,279 - celery.utils.functional - DEBUG - 
+def chord(self, header, body, partial_args=0, interval=1, countdown=2, max_retries=3, eager=4, **kwargs):
+    return 1
+
+2024-06-21 09:13:23,279 - celery.utils.functional - DEBUG - 
+def accumulate(self, *args, **kwargs):
+    return 1
+
+2024-06-21 09:13:28,543 - celery.utils.functional - DEBUG - 
+def live_celery(cctv_id, url):
+    return 1
+
+2024-06-21 09:18:54,026 - celery.utils.functional - DEBUG - 
+def chunks(task, it, n):
+    return 1
+
+2024-06-21 09:18:54,026 - celery.utils.functional - DEBUG - 
+def live_celery(cctv_id, url):
+    return 1
+
+2024-06-21 09:18:54,026 - celery.utils.functional - DEBUG - 
+def unlock_chord(self, group_id, callback, interval=0, max_retries=1, result=2, Result=3, GroupResult=4, result_from_tuple=5, **kwargs):
+    return 1
+
+2024-06-21 09:18:54,027 - celery.utils.functional - DEBUG - 
+def group(self, tasks, result, group_id, partial_args, add_to_parent=0):
+    return 1
+
+2024-06-21 09:18:54,027 - celery.utils.functional - DEBUG - 
+def test(cctv_no, cctv_id, url):
+    return 1
+
+2024-06-21 09:18:54,027 - celery.utils.functional - DEBUG - 
+def xmap(task, it):
+    return 1
+
+2024-06-21 09:18:54,027 - celery.utils.functional - DEBUG - 
+def chain(*args, **kwargs):
+    return 1
+
+2024-06-21 09:18:54,028 - celery.utils.functional - DEBUG - 
+def xstarmap(task, it):
+    return 1
+
+2024-06-21 09:18:54,028 - celery.utils.functional - DEBUG - 
+def backend_cleanup():
+    return 1
+
+2024-06-21 09:18:54,028 - celery.utils.functional - DEBUG - 
+def chord(self, header, body, partial_args=0, interval=1, countdown=2, max_retries=3, eager=4, **kwargs):
+    return 1
+
+2024-06-21 09:18:54,028 - celery.utils.functional - DEBUG - 
+def accumulate(self, *args, **kwargs):
+    return 1
+
+2024-06-21 09:19:03,581 - celery.utils.functional - DEBUG - 
+def live_celery(cctv_id, url):
+    return 1
+
+2024-06-21 09:20:24,934 - celery.utils.functional - DEBUG - 
+def chunks(task, it, n):
+    return 1
+
+2024-06-21 09:20:24,935 - celery.utils.functional - DEBUG - 
+def unlock_chord(self, group_id, callback, interval=0, max_retries=1, result=2, Result=3, GroupResult=4, result_from_tuple=5, **kwargs):
+    return 1
+
+2024-06-21 09:20:24,935 - celery.utils.functional - DEBUG - 
+def group(self, tasks, result, group_id, partial_args, add_to_parent=0):
+    return 1
+
+2024-06-21 09:20:24,935 - celery.utils.functional - DEBUG - 
+def live_celery(cctv_id, url):
+    return 1
+
+2024-06-21 09:20:24,935 - celery.utils.functional - DEBUG - 
+def test(cctv_no, cctv_id, url):
+    return 1
+
+2024-06-21 09:20:24,936 - celery.utils.functional - DEBUG - 
+def xmap(task, it):
+    return 1
+
+2024-06-21 09:20:24,936 - celery.utils.functional - DEBUG - 
+def chain(*args, **kwargs):
+    return 1
+
+2024-06-21 09:20:24,936 - celery.utils.functional - DEBUG - 
+def xstarmap(task, it):
+    return 1
+
+2024-06-21 09:20:24,936 - celery.utils.functional - DEBUG - 
+def backend_cleanup():
+    return 1
+
+2024-06-21 09:20:24,937 - celery.utils.functional - DEBUG - 
+def chord(self, header, body, partial_args=0, interval=1, countdown=2, max_retries=3, eager=4, **kwargs):
+    return 1
+
+2024-06-21 09:20:24,937 - celery.utils.functional - DEBUG - 
+def accumulate(self, *args, **kwargs):
+    return 1
+
+2024-06-21 09:20:32,487 - celery.utils.functional - DEBUG - 
+def live_celery(cctv_id, url):
+    return 1
+
+2024-06-24 09:28:14,500 - celery.utils.functional - DEBUG - 
+def chunks(task, it, n):
+    return 1
+
+2024-06-24 09:28:14,500 - celery.utils.functional - DEBUG - 
+def live_celery(cctv_id, url):
+    return 1
+
+2024-06-24 09:28:14,500 - celery.utils.functional - DEBUG - 
+def unlock_chord(self, group_id, callback, interval=0, max_retries=1, result=2, Result=3, GroupResult=4, result_from_tuple=5, **kwargs):
+    return 1
+
+2024-06-24 09:28:14,501 - celery.utils.functional - DEBUG - 
+def group(self, tasks, result, group_id, partial_args, add_to_parent=0):
+    return 1
+
+2024-06-24 09:28:14,501 - celery.utils.functional - DEBUG - 
+def xmap(task, it):
+    return 1
+
+2024-06-24 09:28:14,501 - celery.utils.functional - DEBUG - 
+def chain(*args, **kwargs):
+    return 1
+
+2024-06-24 09:28:14,501 - celery.utils.functional - DEBUG - 
+def test(cctv_no, cctv_id, url):
+    return 1
+
+2024-06-24 09:28:14,502 - celery.utils.functional - DEBUG - 
+def xstarmap(task, it):
+    return 1
+
+2024-06-24 09:28:14,502 - celery.utils.functional - DEBUG - 
+def backend_cleanup():
+    return 1
+
+2024-06-24 09:28:14,502 - celery.utils.functional - DEBUG - 
+def chord(self, header, body, partial_args=0, interval=1, countdown=2, max_retries=3, eager=4, **kwargs):
+    return 1
+
+2024-06-24 09:28:14,502 - celery.utils.functional - DEBUG - 
+def accumulate(self, *args, **kwargs):
+    return 1
+
+2024-06-24 09:28:19,757 - celery.utils.functional - DEBUG - 
+def live_celery(cctv_id, url):
+    return 1
+
+2024-06-24 09:43:30,543 - celery.utils.functional - DEBUG - 
+def chunks(task, it, n):
+    return 1
+
+2024-06-24 09:43:30,543 - celery.utils.functional - DEBUG - 
+def test(cctv_no, cctv_id, url):
+    return 1
+
+2024-06-24 09:43:30,543 - celery.utils.functional - DEBUG - 
+def unlock_chord(self, group_id, callback, interval=0, max_retries=1, result=2, Result=3, GroupResult=4, result_from_tuple=5, **kwargs):
+    return 1
+
+2024-06-24 09:43:30,544 - celery.utils.functional - DEBUG - 
+def group(self, tasks, result, group_id, partial_args, add_to_parent=0):
+    return 1
+
+2024-06-24 09:43:30,544 - celery.utils.functional - DEBUG - 
+def xmap(task, it):
+    return 1
+
+2024-06-24 09:43:30,544 - celery.utils.functional - DEBUG - 
+def chain(*args, **kwargs):
+    return 1
+
+2024-06-24 09:43:30,544 - celery.utils.functional - DEBUG - 
+def live_celery(cctv_id, url):
+    return 1
+
+2024-06-24 09:43:30,545 - celery.utils.functional - DEBUG - 
+def xstarmap(task, it):
+    return 1
+
+2024-06-24 09:43:30,545 - celery.utils.functional - DEBUG - 
+def backend_cleanup():
+    return 1
+
+2024-06-24 09:43:30,545 - celery.utils.functional - DEBUG - 
+def chord(self, header, body, partial_args=0, interval=1, countdown=2, max_retries=3, eager=4, **kwargs):
+    return 1
+
+2024-06-24 09:43:30,545 - celery.utils.functional - DEBUG - 
+def accumulate(self, *args, **kwargs):
+    return 1
+
+2024-06-24 09:43:31,791 - celery.utils.functional - DEBUG - 
+def live_celery(cctv_id, url):
+    return 1
+
+2024-06-24 09:45:58,345 - celery.utils.functional - DEBUG - 
+def chunks(task, it, n):
+    return 1
+
+2024-06-24 09:45:58,345 - celery.utils.functional - DEBUG - 
+def test(cctv_no, cctv_id, url):
+    return 1
+
+2024-06-24 09:45:58,346 - celery.utils.functional - DEBUG - 
+def unlock_chord(self, group_id, callback, interval=0, max_retries=1, result=2, Result=3, GroupResult=4, result_from_tuple=5, **kwargs):
+    return 1
+
+2024-06-24 09:45:58,346 - celery.utils.functional - DEBUG - 
+def group(self, tasks, result, group_id, partial_args, add_to_parent=0):
+    return 1
+
+2024-06-24 09:45:58,346 - celery.utils.functional - DEBUG - 
+def xmap(task, it):
+    return 1
+
+2024-06-24 09:45:58,346 - celery.utils.functional - DEBUG - 
+def chain(*args, **kwargs):
+    return 1
+
+2024-06-24 09:45:58,347 - celery.utils.functional - DEBUG - 
+def live_celery(cctv_id, url):
+    return 1
+
+2024-06-24 09:45:58,347 - celery.utils.functional - DEBUG - 
+def xstarmap(task, it):
+    return 1
+
+2024-06-24 09:45:58,347 - celery.utils.functional - DEBUG - 
+def backend_cleanup():
+    return 1
+
+2024-06-24 09:45:58,347 - celery.utils.functional - DEBUG - 
+def chord(self, header, body, partial_args=0, interval=1, countdown=2, max_retries=3, eager=4, **kwargs):
+    return 1
+
+2024-06-24 09:45:58,348 - celery.utils.functional - DEBUG - 
+def accumulate(self, *args, **kwargs):
+    return 1
+
+2024-06-24 09:46:04,128 - celery.utils.functional - DEBUG - 
+def live_celery(cctv_id, url):
+    return 1
+
+2024-06-24 09:56:30,438 - celery.utils.functional - DEBUG - 
+def chunks(task, it, n):
+    return 1
+
+2024-06-24 09:56:30,438 - celery.utils.functional - DEBUG - 
+def test(cctv_no, cctv_id, url):
+    return 1
+
+2024-06-24 09:56:30,439 - celery.utils.functional - DEBUG - 
+def unlock_chord(self, group_id, callback, interval=0, max_retries=1, result=2, Result=3, GroupResult=4, result_from_tuple=5, **kwargs):
+    return 1
+
+2024-06-24 09:56:30,439 - celery.utils.functional - DEBUG - 
+def group(self, tasks, result, group_id, partial_args, add_to_parent=0):
+    return 1
+
+2024-06-24 09:56:30,439 - celery.utils.functional - DEBUG - 
+def xmap(task, it):
+    return 1
+
+2024-06-24 09:56:30,440 - celery.utils.functional - DEBUG - 
+def chain(*args, **kwargs):
+    return 1
+
+2024-06-24 09:56:30,440 - celery.utils.functional - DEBUG - 
+def live_celery(cctv_id, url):
+    return 1
+
+2024-06-24 09:56:30,440 - celery.utils.functional - DEBUG - 
+def xstarmap(task, it):
+    return 1
+
+2024-06-24 09:56:30,440 - celery.utils.functional - DEBUG - 
+def backend_cleanup():
+    return 1
+
+2024-06-24 09:56:30,440 - celery.utils.functional - DEBUG - 
+def chord(self, header, body, partial_args=0, interval=1, countdown=2, max_retries=3, eager=4, **kwargs):
+    return 1
+
+2024-06-24 09:56:30,441 - celery.utils.functional - DEBUG - 
+def accumulate(self, *args, **kwargs):
+    return 1
+
+2024-06-24 10:01:35,936 - celery.utils.functional - DEBUG - 
+def live_celery(cctv_id, url):
+    return 1
+
+2024-06-24 12:41:05,740 - celery.utils.functional - DEBUG - 
+def chunks(task, it, n):
+    return 1
+
+2024-06-24 12:41:05,740 - celery.utils.functional - DEBUG - 
+def test(cctv_no, cctv_id, url):
+    return 1
+
+2024-06-24 12:41:05,741 - celery.utils.functional - DEBUG - 
+def unlock_chord(self, group_id, callback, interval=0, max_retries=1, result=2, Result=3, GroupResult=4, result_from_tuple=5, **kwargs):
+    return 1
+
+2024-06-24 12:41:05,741 - celery.utils.functional - DEBUG - 
+def group(self, tasks, result, group_id, partial_args, add_to_parent=0):
+    return 1
+
+2024-06-24 12:41:05,741 - celery.utils.functional - DEBUG - 
+def xmap(task, it):
+    return 1
+
+2024-06-24 12:41:05,741 - celery.utils.functional - DEBUG - 
+def chain(*args, **kwargs):
+    return 1
+
+2024-06-24 12:41:05,742 - celery.utils.functional - DEBUG - 
+def live_celery(cctv_id, url):
+    return 1
+
+2024-06-24 12:41:05,742 - celery.utils.functional - DEBUG - 
+def xstarmap(task, it):
+    return 1
+
+2024-06-24 12:41:05,742 - celery.utils.functional - DEBUG - 
+def backend_cleanup():
+    return 1
+
+2024-06-24 12:41:05,742 - celery.utils.functional - DEBUG - 
+def chord(self, header, body, partial_args=0, interval=1, countdown=2, max_retries=3, eager=4, **kwargs):
+    return 1
+
+2024-06-24 12:41:05,743 - celery.utils.functional - DEBUG - 
+def accumulate(self, *args, **kwargs):
+    return 1
+
+2024-06-24 12:41:18,986 - celery.utils.functional - DEBUG - 
+def live_celery(cctv_id, url):
+    return 1
+
+2024-07-02 16:40:18,783 - celery.utils.functional - DEBUG - 
+def xstarmap(task, it):
+    return 1
+
+2024-07-02 16:40:18,783 - celery.utils.functional - DEBUG - 
+def backend_cleanup():
+    return 1
+
+2024-07-02 16:40:18,784 - celery.utils.functional - DEBUG - 
+def chord(self, header, body, partial_args=0, interval=1, countdown=2, max_retries=3, eager=4, **kwargs):
+    return 1
+
+2024-07-02 16:40:18,784 - celery.utils.functional - DEBUG - 
+def accumulate(self, *args, **kwargs):
+    return 1
+
+2024-07-02 16:40:18,784 - celery.utils.functional - DEBUG - 
+def chunks(task, it, n):
+    return 1
+
+2024-07-02 16:40:18,784 - celery.utils.functional - DEBUG - 
+def live_celery(cctv_id, url):
+    return 1
+
+2024-07-02 16:40:18,785 - celery.utils.functional - DEBUG - 
+def unlock_chord(self, group_id, callback, interval=0, max_retries=1, result=2, Result=3, GroupResult=4, result_from_tuple=5, **kwargs):
+    return 1
+
+2024-07-02 16:40:18,785 - celery.utils.functional - DEBUG - 
+def group(self, tasks, result, group_id, partial_args, add_to_parent=0):
+    return 1
+
+2024-07-02 16:40:18,785 - celery.utils.functional - DEBUG - 
+def xmap(task, it):
+    return 1
+
+2024-07-02 16:40:18,786 - celery.utils.functional - DEBUG - 
+def chain(*args, **kwargs):
+    return 1
+
+2024-07-02 16:40:18,786 - celery.utils.functional - DEBUG - 
+def test(cctv_no, cctv_id, url):
+    return 1
+
+2024-07-08 17:16:30,176 - celery.utils.functional - DEBUG - 
+def xstarmap(task, it):
+    return 1
+
+2024-07-08 17:16:30,176 - celery.utils.functional - DEBUG - 
+def backend_cleanup():
+    return 1
+
+2024-07-08 17:16:30,177 - celery.utils.functional - DEBUG - 
+def chord(self, header, body, partial_args=0, interval=1, countdown=2, max_retries=3, eager=4, **kwargs):
+    return 1
+
+2024-07-08 17:16:30,177 - celery.utils.functional - DEBUG - 
+def accumulate(self, *args, **kwargs):
+    return 1
+
+2024-07-08 17:16:30,177 - celery.utils.functional - DEBUG - 
+def chunks(task, it, n):
+    return 1
+
+2024-07-08 17:16:30,178 - celery.utils.functional - DEBUG - 
+def unlock_chord(self, group_id, callback, interval=0, max_retries=1, result=2, Result=3, GroupResult=4, result_from_tuple=5, **kwargs):
+    return 1
+
+2024-07-08 17:16:30,178 - celery.utils.functional - DEBUG - 
+def test(cctv_no, cctv_id, url):
+    return 1
+
+2024-07-08 17:16:30,178 - celery.utils.functional - DEBUG - 
+def group(self, tasks, result, group_id, partial_args, add_to_parent=0):
+    return 1
+
+2024-07-08 17:16:30,178 - celery.utils.functional - DEBUG - 
+def xmap(task, it):
+    return 1
+
+2024-07-08 17:16:30,179 - celery.utils.functional - DEBUG - 
+def chain(*args, **kwargs):
+    return 1
+
+2024-07-08 17:16:30,179 - celery.utils.functional - DEBUG - 
+def live_celery(cctv_id, url):
+    return 1
+
+2024-07-08 17:42:23,312 - celery.utils.functional - DEBUG - 
+def xstarmap(task, it):
+    return 1
+
+2024-07-08 17:42:23,313 - celery.utils.functional - DEBUG - 
+def backend_cleanup():
+    return 1
+
+2024-07-08 17:42:23,313 - celery.utils.functional - DEBUG - 
+def chord(self, header, body, partial_args=0, interval=1, countdown=2, max_retries=3, eager=4, **kwargs):
+    return 1
+
+2024-07-08 17:42:23,314 - celery.utils.functional - DEBUG - 
+def accumulate(self, *args, **kwargs):
+    return 1
+
+2024-07-08 17:42:23,314 - celery.utils.functional - DEBUG - 
+def chunks(task, it, n):
+    return 1
+
+2024-07-08 17:42:23,314 - celery.utils.functional - DEBUG - 
+def unlock_chord(self, group_id, callback, interval=0, max_retries=1, result=2, Result=3, GroupResult=4, result_from_tuple=5, **kwargs):
+    return 1
+
+2024-07-08 17:42:23,315 - celery.utils.functional - DEBUG - 
+def test(cctv_no, cctv_id, url):
+    return 1
+
+2024-07-08 17:42:23,315 - celery.utils.functional - DEBUG - 
+def group(self, tasks, result, group_id, partial_args, add_to_parent=0):
+    return 1
+
+2024-07-08 17:42:23,315 - celery.utils.functional - DEBUG - 
+def xmap(task, it):
+    return 1
+
+2024-07-08 17:42:23,316 - celery.utils.functional - DEBUG - 
+def chain(*args, **kwargs):
+    return 1
+
+2024-07-08 17:42:23,316 - celery.utils.functional - DEBUG - 
+def live_celery(cctv_id, url):
+    return 1
+
+2024-07-09 12:57:47,769 - celery.utils.functional - DEBUG - 
+def xstarmap(task, it):
+    return 1
+
+2024-07-09 12:57:47,770 - celery.utils.functional - DEBUG - 
+def backend_cleanup():
+    return 1
+
+2024-07-09 12:57:47,770 - celery.utils.functional - DEBUG - 
+def chord(self, header, body, partial_args=0, interval=1, countdown=2, max_retries=3, eager=4, **kwargs):
+    return 1
+
+2024-07-09 12:57:47,770 - celery.utils.functional - DEBUG - 
+def accumulate(self, *args, **kwargs):
+    return 1
+
+2024-07-09 12:57:47,770 - celery.utils.functional - DEBUG - 
+def chunks(task, it, n):
+    return 1
+
+2024-07-09 12:57:47,771 - celery.utils.functional - DEBUG - 
+def unlock_chord(self, group_id, callback, interval=0, max_retries=1, result=2, Result=3, GroupResult=4, result_from_tuple=5, **kwargs):
+    return 1
+
+2024-07-09 12:57:47,771 - celery.utils.functional - DEBUG - 
+def test(cctv_no, cctv_id, url):
+    return 1
+
+2024-07-09 12:57:47,771 - celery.utils.functional - DEBUG - 
+def group(self, tasks, result, group_id, partial_args, add_to_parent=0):
+    return 1
+
+2024-07-09 12:57:47,771 - celery.utils.functional - DEBUG - 
+def xmap(task, it):
+    return 1
+
+2024-07-09 12:57:47,772 - celery.utils.functional - DEBUG - 
+def chain(*args, **kwargs):
+    return 1
+
+2024-07-09 12:57:47,772 - celery.utils.functional - DEBUG - 
+def live_celery(cctv_id, url):
+    return 1
+
+2024-08-19 22:46:06,388 - celery.utils.functional - DEBUG - 
+def xmap(task, it):
+    return 1
+
+2024-08-19 22:46:06,395 - celery.utils.functional - DEBUG - 
+def live_celery(cctv_id, ai_on, url):
+    return 1
+
+2024-08-19 22:46:06,395 - celery.utils.functional - DEBUG - 
+def chain(*args, **kwargs):
+    return 1
+
+2024-08-19 22:46:06,398 - celery.utils.functional - DEBUG - 
+def check_health():
+    return 1
+
+2024-08-19 22:46:06,402 - celery.utils.functional - DEBUG - 
+def xstarmap(task, it):
+    return 1
+
+2024-08-19 22:46:06,402 - celery.utils.functional - DEBUG - 
+def backend_cleanup():
+    return 1
+
+2024-08-19 22:46:06,403 - celery.utils.functional - DEBUG - 
+def chord(self, header, body, partial_args=0, interval=1, countdown=2, max_retries=3, eager=4, **kwargs):
+    return 1
+
+2024-08-19 22:46:06,407 - celery.utils.functional - DEBUG - 
+def accumulate(self, *args, **kwargs):
+    return 1
+
+2024-08-19 22:46:06,407 - celery.utils.functional - DEBUG - 
+def chunks(task, it, n):
+    return 1
+
+2024-08-19 22:46:06,407 - celery.utils.functional - DEBUG - 
+def test(cctv_no, cctv_id, url):
+    return 1
+
+2024-08-19 22:46:06,408 - celery.utils.functional - DEBUG - 
+def unlock_chord(self, group_id, callback, interval=0, max_retries=1, result=2, Result=3, GroupResult=4, result_from_tuple=5, **kwargs):
+    return 1
+
+2024-08-19 22:46:06,414 - celery.utils.functional - DEBUG - 
+def xmap(task, it):
+    return 1
+
+2024-08-19 22:46:06,415 - celery.utils.functional - DEBUG - 
+def group(self, tasks, result, group_id, partial_args, add_to_parent=0):
+    return 1
+
+2024-08-19 22:46:06,415 - celery.utils.functional - DEBUG - 
+def live_celery(cctv_id, ai_on, url):
+    return 1
+
+2024-08-19 22:46:06,415 - celery.utils.functional - DEBUG - 
+def chain(*args, **kwargs):
+    return 1
+
+2024-08-19 22:46:06,416 - celery.utils.functional - DEBUG - 
+def check_health():
+    return 1
+
+2024-08-19 22:46:06,416 - celery.utils.functional - DEBUG - 
+def xstarmap(task, it):
+    return 1
+
+2024-08-19 22:46:06,417 - celery.utils.functional - DEBUG - 
+def backend_cleanup():
+    return 1
+
+2024-08-19 22:46:06,417 - celery.utils.functional - DEBUG - 
+def chord(self, header, body, partial_args=0, interval=1, countdown=2, max_retries=3, eager=4, **kwargs):
+    return 1
+
+2024-08-19 22:46:06,418 - celery.utils.functional - DEBUG - 
+def accumulate(self, *args, **kwargs):
+    return 1
+
+2024-08-19 22:46:06,422 - celery.utils.functional - DEBUG - 
+def chunks(task, it, n):
+    return 1
+
+2024-08-19 22:46:06,423 - celery.utils.functional - DEBUG - 
+def test(cctv_no, cctv_id, url):
+    return 1
+
+2024-08-19 22:46:06,424 - celery.utils.functional - DEBUG - 
+def unlock_chord(self, group_id, callback, interval=0, max_retries=1, result=2, Result=3, GroupResult=4, result_from_tuple=5, **kwargs):
+    return 1
+
+2024-08-19 22:46:06,425 - celery.utils.functional - DEBUG - 
+def group(self, tasks, result, group_id, partial_args, add_to_parent=0):
+    return 1
+
+2024-08-19 22:50:04,424 - celery.utils.functional - DEBUG - 
+def xmap(task, it):
+    return 1
+
+2024-08-19 22:50:04,428 - celery.utils.functional - DEBUG - 
+def live_celery(cctv_id, ai_on, url):
+    return 1
+
+2024-08-19 22:50:04,429 - celery.utils.functional - DEBUG - 
+def chain(*args, **kwargs):
+    return 1
+
+2024-08-19 22:50:04,429 - celery.utils.functional - DEBUG - 
+def check_health():
+    return 1
+
+2024-08-19 22:50:04,430 - celery.utils.functional - DEBUG - 
+def xstarmap(task, it):
+    return 1
+
+2024-08-19 22:50:04,435 - celery.utils.functional - DEBUG - 
+def backend_cleanup():
+    return 1
+
+2024-08-19 22:50:04,435 - celery.utils.functional - DEBUG - 
+def chord(self, header, body, partial_args=0, interval=1, countdown=2, max_retries=3, eager=4, **kwargs):
+    return 1
+
+2024-08-19 22:50:04,436 - celery.utils.functional - DEBUG - 
+def accumulate(self, *args, **kwargs):
+    return 1
+
+2024-08-19 22:50:04,446 - celery.utils.functional - DEBUG - 
+def chunks(task, it, n):
+    return 1
+
+2024-08-19 22:50:04,450 - celery.utils.functional - DEBUG - 
+def test(cctv_no, cctv_id, url):
+    return 1
+
+2024-08-19 22:50:04,451 - celery.utils.functional - DEBUG - 
+def unlock_chord(self, group_id, callback, interval=0, max_retries=1, result=2, Result=3, GroupResult=4, result_from_tuple=5, **kwargs):
+    return 1
+
+2024-08-19 22:50:04,451 - celery.utils.functional - DEBUG - 
+def group(self, tasks, result, group_id, partial_args, add_to_parent=0):
+    return 1
+
+2024-08-19 22:50:04,880 - celery.utils.functional - DEBUG - 
+def xmap(task, it):
+    return 1
+
+2024-08-19 22:50:04,882 - celery.utils.functional - DEBUG - 
+def live_celery(cctv_id, ai_on, url):
+    return 1
+
+2024-08-19 22:50:04,884 - celery.utils.functional - DEBUG - 
+def chain(*args, **kwargs):
+    return 1
+
+2024-08-19 22:50:04,885 - celery.utils.functional - DEBUG - 
+def check_health():
+    return 1
+
+2024-08-19 22:50:04,885 - celery.utils.functional - DEBUG - 
+def xstarmap(task, it):
+    return 1
+
+2024-08-19 22:50:04,886 - celery.utils.functional - DEBUG - 
+def backend_cleanup():
+    return 1
+
+2024-08-19 22:50:04,886 - celery.utils.functional - DEBUG - 
+def chord(self, header, body, partial_args=0, interval=1, countdown=2, max_retries=3, eager=4, **kwargs):
+    return 1
+
+2024-08-19 22:50:04,886 - celery.utils.functional - DEBUG - 
+def accumulate(self, *args, **kwargs):
+    return 1
+
+2024-08-19 22:50:04,887 - celery.utils.functional - DEBUG - 
+def chunks(task, it, n):
+    return 1
+
+2024-08-19 22:50:04,887 - celery.utils.functional - DEBUG - 
+def test(cctv_no, cctv_id, url):
+    return 1
+
+2024-08-19 22:50:04,888 - celery.utils.functional - DEBUG - 
+def unlock_chord(self, group_id, callback, interval=0, max_retries=1, result=2, Result=3, GroupResult=4, result_from_tuple=5, **kwargs):
+    return 1
+
+2024-08-19 22:50:04,888 - celery.utils.functional - DEBUG - 
+def group(self, tasks, result, group_id, partial_args, add_to_parent=0):
+    return 1
+
