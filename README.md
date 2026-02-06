@@ -1,74 +1,77 @@
-CCTV AI Streaming Platform
+# CCTV AI Streaming Platform
 
 Event-Driven, Lease-based, Fault-Tolerant CCTV AI Streaming System
 
-이 프로젝트는 CCTV 채널별 AI 기반 스트리밍을 비동기로 실행하는 플랫폼이다.
-API 요청을 즉시 처리하고, 장시간 실행되는 스트리밍 파이프라인은 이벤트 기반 비동기 구조로 분리하여 안정성·확장성·운영 편의성을 확보한다.
+이 프로젝트는 CCTV 채널별 AI 기반 스트리밍을 비동기로 실행하는 플랫폼이다.  
+API 요청은 즉시 처리하고, 장시간 실행되는 스트리밍 파이프라인은 이벤트 기반 구조로 분리하여
+안정성, 확장성, 운영 편의성을 확보한다.
 
-✨ 핵심 특징
+---
 
-비동기 스트리밍 제어
+## 1. 주요 특징
 
-API는 즉시 응답 (202 Accepted)
+- API 요청 즉시 응답 (비동기 스트리밍)
+- 채널당 프로세스 1개 원칙 (ffmpeg / GStreamer)
+- Lease 기반 중복 실행 방지
+- 워커 장애 시 자동 takeover
+- Kafka 기반 이벤트 처리
+- AI 탐지 이벤트 Kafka 발행
+- Kubernetes(KIND 포함) 환경 고려
+- Celery 미사용 (상태ful 스트리밍에 부적합)
 
-스트리밍은 Kafka 기반 비동기 실행
+---
 
-채널당 프로세스 1개 원칙
+## 2. 전체 아키텍처 개요
 
-ffmpeg / GStreamer subprocess로 채널 격리
+Client  
+→ API Gateway  
+→ Kafka (stream.commands)  
+→ Stream Orchestrator  
+→ Stream Worker (ffmpeg / gstreamer)  
+→ HLS / RTSP / MJPEG Output  
 
-Lease 기반 중복 실행 방지
+Optional:  
+Stream Worker → Inference Worker → Kafka (ai.events)
 
-동일 CCTV 채널의 중복 스트리밍 원천 차단
+---
 
-장시간 실행 워크로드 대응
+## 3. 컴포넌트 역할
 
-워커 장애 시 자동 takeover
+API Gateway  
+- 스트리밍 시작/중지 요청 수신
+- 요청 검증 및 즉시 응답
 
-재시작(backoff) 및 무한 루프 방지
+Kafka  
+- 비동기 명령 및 이벤트 전달
 
-AI 이벤트 Kafka 발행
+Stream Orchestrator  
+- 워커 할당
+- Lease 기반 중복 실행 방지
 
-탐지 결과를 ai.events 토픽으로 전달
+Stream Worker  
+- 채널별 스트리밍 subprocess 실행
+- 재시작 및 heartbeat 관리
 
-Kubernetes 친화적 구조
+Inference Worker  
+- AI 추론 수행
+- AI 이벤트 Kafka 발행
 
-KIND / 실 클러스터 동일 구조 운영 가능
+Database (MySQL / PostgreSQL)  
+- 스트림 상태 머신 관리
+- Lease(소유권) 관리
 
-Celery 미사용
+---
 
-상태ful 스트리밍 워크로드에 부적합하여 배제
+## 4. 프로젝트 구조
 
-🏗 전체 아키텍처 개요
-Client
-  ↓
-API Gateway
-  ↓ (Kafka: stream.commands)
-Stream Orchestrator
-  ↓ (lease + assign)
-Stream Worker (ffmpeg / gstreamer)
-  ↓
-HLS / RTSP / MJPEG Output
-
-[Optional]
-Stream Worker → Inference Worker → Kafka(ai.events)
-
-컴포넌트 역할
-컴포넌트	역할
-API Gateway	스트리밍 시작/중지 요청 수신
-Kafka	비동기 명령/이벤트 전달
-Orchestrator	워커 할당 및 중복 실행 방지
-Stream Worker	채널별 스트리밍 실행
-Inference Worker	AI 추론 및 이벤트 발행
-DB(MySQL/Postgres)	상태 머신 + lease 관리
-📂 프로젝트 구조
+```
 streaming-platform/
 ├── app/
 │   ├── api/                 # API Gateway
-│   ├── core/                # 설정/로깅/관측
+│   ├── core/                # 설정, 로깅, 관측
 │   ├── domain/              # 스트리밍 도메인 규칙
 │   ├── application/         # 유스케이스 계층
-│   ├── infrastructure/      # Kafka / DB / ffmpeg 구현
+│   ├── infrastructure/      # Kafka, DB, ffmpeg 구현
 │   ├── services/
 │   │   ├── orchestrator/    # 워커 할당자
 │   │   ├── worker_stream/   # 스트리밍 실행 워커
@@ -76,133 +79,96 @@ streaming-platform/
 │   └── tests/
 │
 ├── docker/                  # 서비스별 Dockerfile
-├── deployments/k8s/         # KIND / K8s 배포 YAML
+├── deployments/k8s/         # KIND / Kubernetes 배포 YAML
 ├── scripts/                 # 로컬/KIND 자동화 스크립트
 └── README.md
+```
 
-🔄 스트리밍 처리 흐름
+---
 
-Client
+## 5. 스트리밍 처리 흐름
 
-POST /v1/streams 요청
+1. Client가 POST /v1/streams 요청
+2. API Gateway가 요청 검증 후 Kafka에 START command 발행
+3. Stream Orchestrator가 채널 상태 확인 및 워커 할당
+4. Stream Worker가 ffmpeg / gstreamer subprocess 실행
+5. 스트리밍 출력(HLS/RTSP/MJPEG) 제공
+6. Inference Worker가 AI 추론 후 ai.events 발행 (선택)
 
-API Gateway
+---
 
-요청 검증
+## 6. 상태 머신 및 Lease 모델
 
-스트림 Job 생성
+Stream 상태 값
+- PENDING
+- ASSIGNED
+- RUNNING
+- FAILED
+- STOPPED
 
-stream.commands 토픽에 START 발행
+설계 원칙
+- desired_state와 actual_state 분리
+- Lease 만료 시 다른 워커가 takeover 가능
+- START 요청은 멱등적 처리
 
-Stream Orchestrator
+---
 
-채널 상태 확인
+## 7. Kafka 토픽 설계
 
-Lease 획득
+stream.commands  
+- START / STOP / RESTART
 
-Stream Worker 할당
+stream.events  
+- STARTED / FAILED / HEARTBEAT
 
-Stream Worker
-
-ffmpeg / gstreamer subprocess 실행
-
-HLS / RTSP / MJPEG 출력
-
-Heartbeat 이벤트 발행
-
-Inference Worker (선택)
-
-프레임 샘플링
-
-AI 추론
-
-ai.events 발행
-
-🔐 상태 머신 & Lease 모델
-Stream 상태
-
-PENDING
-
-ASSIGNED
-
-RUNNING
-
-FAILED
-
-STOPPED
-
-핵심 원칙
-
-desired_state와 actual_state 분리
-
-Lease 만료 시 다른 워커가 takeover 가능
-
-START 요청은 멱등적
-
-📡 Kafka 토픽 설계
-토픽	용도
-stream.commands	START / STOP / RESTART
-stream.events	STARTED / FAILED / HEARTBEAT
-ai.events	AI 탐지 이벤트
+ai.events  
+- AI 탐지 결과 이벤트
 
 공통 규칙
+- Partition key는 channel_id
+- at-least-once 전제
+- event_id / command_id 기반 중복 처리
 
-Partition Key: channel_id
+---
 
-at-least-once 전제
+## 8 로컬 개발 (KIND)
 
-event_id / command_id 기반 중복 처리
-
-🚫 Celery를 사용하지 않는 이유
-
-스트리밍은 종료되지 않는 작업
-
-채널은 상태ful 리소스
-
-Celery는 단기·Stateless 작업에 최적화됨
-
-👉 본 프로젝트에서는 Kafka + Lease 기반 이벤트 아키텍처를 채택
-
-🚀 로컬 개발 (KIND)
-# KIND 클러스터 생성
+```
 scripts/kind_create.sh
-
-# 이미지 로드
 scripts/kind_load_images.sh
-
-# 배포
 scripts/deploy_k8s.sh
+```
 
-📊 Observability
+---
 
-Logs: channel_id / worker_id 포함 구조화 로그
+## 9 Observability
 
-Metrics: active_streams, restart_count, heartbeat
+- Logs: channel_id, worker_id 포함 구조화 로그
+- Metrics: active_streams, restart_count, heartbeat
+- Tracing: API → Orchestrator → Worker 흐름 추적
 
-Tracing: API → Orchestrator → Worker 흐름 추적
+---
 
-🧠 설계 철학
+## 10 설계 철학
 
-“웹 서버가 아니라 스트리밍 인프라다.”
+이 시스템은 웹 애플리케이션이 아니라 스트리밍 인프라다.
 
-실행과 제어를 분리한다
+- 실행과 제어를 분리한다
+- 상태를 명시적으로 관리한다
+- 장애를 전제로 설계한다
+- 확장은 워커 단위로 수행한다
 
-상태를 명시적으로 관리한다
+---
 
-장애를 전제로 설계한다
+## 11 향후 확장
 
-확장은 워커 단위로 한다
+- KEDA 기반 자동 스케일
+- Helm Chart 제공
+- 이벤트 데이터 ClickHouse / Elastic 적재
+- 멀티 테넌시(site_id 단위 분리)
 
-📌 향후 확장
+---
 
-KEDA 기반 자동 스케일
-
-Helm Chart 제공
-
-ClickHouse / Elastic 이벤트 적재
-
-멀티 테넌시(site_id 단위 분리)
-
-📄 License
+## License
 
 Internal / Private Project
