@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: streaming-config
+  namespace: streaming-platform
+data:
+  kafka_bootstrap: "kafka:9092"
+  redis_host: "redis"
+  mysql_host: "mysql"

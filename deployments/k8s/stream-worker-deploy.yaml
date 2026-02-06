@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: stream-worker
+  namespace: streaming-platform
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: stream-worker
+  template:
+    metadata:
+      labels:
+        app: stream-worker
+    spec:
+      containers:
+        - name: worker
+          image: streaming-worker-stream:latest
+          env:
+            - name: WORKER_ID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          envFrom:
+            - configMapRef:
+                name: streaming-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: stream-worker
+  namespace: streaming-platform
+spec:
+  selector:
+    app: stream-worker
+  ports: []
+  type: ClusterIP

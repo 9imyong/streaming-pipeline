@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: infer-worker
+  namespace: streaming-platform
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: infer-worker
+  template:
+    metadata:
+      labels:
+        app: infer-worker
+    spec:
+      containers:
+        - name: worker
+          image: streaming-worker-infer:latest
+          envFrom:
+            - configMapRef:
+                name: streaming-config
+          # resources:
+          #   limits:
+          #     nvidia.com/gpu: "1"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: infer-worker
+  namespace: streaming-platform
+spec:
+  selector:
+    app: infer-worker
+  ports: []
+  type: ClusterIP

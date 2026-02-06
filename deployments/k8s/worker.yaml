@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: streaming-worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: streaming-worker
+  template:
+    metadata:
+      labels:
+        app: streaming-worker
+    spec:
+      containers:
+        - name: worker
+          image: streaming-worker:latest
+          command: ["celery", "-A", "tasks", "worker", "-c", "12", "--loglevel=info"]
+          env:
+            - name: REDIS_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: streaming-config
+                  key: redis_host
+          resources:
+            limits:
+              nvidia.com/gpu: "1"
