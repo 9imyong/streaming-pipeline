@@ -131,12 +131,29 @@ ai.events
 
 ---
 
-## 8 로컬 개발 (KIND)
+## 8 개발·배포 워크플로우
 
-```
-scripts/kind_create.sh
-scripts/kind_load_images.sh
-scripts/deploy_k8s.sh
+| 단계 | 도구 | 설명 |
+|------|------|------|
+| **이미지 세팅 전** | **uv** | 로컬에서 `uv sync` 후 `uv run`으로 API/워커 실행. 빠른 개발·테스트. |
+| **이미지 완료 후** | **docker-compose** | 이미지 빌드 후 코드 **마운트**로 변경 사항 즉시 반영. (`docker-compose.streaming.dev.yml` 사용) |
+| **서비스 단계** | **KIND** | Kubernetes 로컬 검증. `kind_create.sh` → 빌드 → `kind_load_images.sh` → `deploy_k8s.sh` |
+
+추론(Inference)은 현재 **mock** 사용. `INFERENCE_MOCK=1`(기본)이며, 실제 모델 전환 시 `app/services/worker_infer/pipeline.py`만 교체.
+
+상세: **[docs/DEV_WORKFLOW.md](docs/DEV_WORKFLOW.md)**
+
+```bash
+# uv 로컬
+uv sync && uv run uvicorn app.gateway.main:app --reload --port 8000
+
+# docker-compose (코드 마운트)
+docker compose -f docker/docker-compose.streaming.yml -f docker/docker-compose.streaming.dev.yml up -d
+
+# KIND
+./scripts/kind_create.sh
+./scripts/kind_load_images.sh
+./scripts/deploy_k8s.sh
 ```
 
 ---
