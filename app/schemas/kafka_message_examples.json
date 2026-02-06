@@ -1,0 +1,70 @@
+{
+  "_comment": "Kafka 메시지 스키마 예시. Partition key = channel_id",
+  "stream.commands": {
+    "START": {
+      "command": "START",
+      "channel_id": "cctv-01",
+      "job_id": "550e8400-e29b-41d4-a716-446655440000",
+      "idempotency_key": "client-request-abc123",
+      "params": {
+        "source_rtsp": "rtsp://user:pass@host:554/stream",
+        "output": "hls",
+        "output_path": "/data/playlist/streaming/cctv-01",
+        "ai_profile": "ppe"
+      },
+      "created_at": "2025-02-07T10:00:00.000000+00:00"
+    },
+    "STOP": {
+      "command": "STOP",
+      "channel_id": "cctv-01",
+      "job_id": "550e8400-e29b-41d4-a716-446655440001",
+      "idempotency_key": "client-stop-xyz",
+      "params": null,
+      "created_at": "2025-02-07T10:05:00.000000+00:00"
+    }
+  },
+  "stream.events": {
+    "STARTED": {
+      "event": "STARTED",
+      "channel_id": "cctv-01",
+      "worker_id": "worker-pod-abc",
+      "job_id": "550e8400-e29b-41d4-a716-446655440000",
+      "message": null,
+      "frame_count": null,
+      "last_pts": null,
+      "created_at": "2025-02-07T10:00:05.000000+00:00"
+    },
+    "HEARTBEAT": {
+      "event": "HEARTBEAT",
+      "channel_id": "cctv-01",
+      "worker_id": "worker-pod-abc",
+      "job_id": null,
+      "message": null,
+      "frame_count": 12345,
+      "last_pts": 123.456,
+      "created_at": "2025-02-07T10:01:00.000000+00:00"
+    },
+    "FAILED": {
+      "event": "FAILED",
+      "channel_id": "cctv-01",
+      "worker_id": "worker-pod-abc",
+      "job_id": "550e8400-e29b-41d4-a716-446655440000",
+      "message": "Connection refused rtsp://...",
+      "frame_count": null,
+      "last_pts": null,
+      "created_at": "2025-02-07T10:02:00.000000+00:00"
+    }
+  },
+  "ai.events": {
+    "example": {
+      "channel_id": "cctv-01",
+      "snapshot_url": "https://storage.example.com/snapshots/cctv-01/20250207/100005.jpg",
+      "detections": [
+        { "class_name": "helmet", "score": 0.95, "bbox": [0.1, 0.2, 0.3, 0.4] },
+        { "class_name": "person", "score": 0.88, "bbox": [0.5, 0.1, 0.9, 0.8] }
+      ],
+      "frame_pts": 123.456,
+      "created_at": "2025-02-07T10:00:05.000000+00:00"
+    }
+  }
+}
