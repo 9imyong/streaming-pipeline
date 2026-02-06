@@ -1,0 +1,77 @@
+# 로컬 개발용 (docker/ 디렉터리 기준이 아닌 프로젝트 루트에서 실행)
+# 사용: docker compose -f docker/docker-compose.dev.yml up -d
+services:
+  api:
+    build:
+      context: ..
+      dockerfile: docker/api.Dockerfile
+    container_name: streaming-api
+    ports:
+      - "8000:8000"
+    volumes:
+      - /data:/data
+      - ../legacy:/app/legacy
+      - ../app:/app/app
+      - ../tensorrt:/tensorrt
+    env_file: ../.env
+    environment:
+      - REDIS_HOST=redis
+      - NVIDIA_VISIBLE_DEVICES=0
+      - TZ=Asia/Seoul
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    depends_on:
+      - redis
+
+  celery_worker:
+    build:
+      context: ..
+      dockerfile: docker/worker.Dockerfile
+    container_name: streaming-worker
+    command: celery -A legacy.tasks worker -c 12 -n celery0@myhost --loglevel=info
+    volumes:
+      - ../legacy:/app/legacy
+      - ../app:/app/app
+      - ../tensorrt:/tensorrt
+      - /data:/data
+    env_file: ../.env
+    environment:
+      - REDIS_HOST=redis
+      - NVIDIA_VISIBLE_DEVICES=0
+      - TZ=Asia/Seoul
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    depends_on:
+      - redis
+
+  celery_beat:
+    build:
+      context: ..
+      dockerfile: docker/worker.Dockerfile
+    container_name: streaming-beat
+    command: celery -A legacy.tasks beat --loglevel=info
+    volumes:
+      - ../legacy:/app/legacy
+      - ../app:/app/app
+      - ../tensorrt:/tensorrt
+    env_file: ../.env
+    environment:
+      - REDIS_HOST=redis
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:7-alpine
+    container_name: streaming-redis
+    ports:
+      - "6379:6379"

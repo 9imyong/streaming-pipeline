@@ -1,0 +1,23 @@
+# Celery 워커 이미지: legacy + app, 진입점 legacy.tasks
+FROM openmmlab/mmdeploy:ubuntu20.04-cuda11.8-mmdeploy
+ARG DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && \
+    apt-get install -y -f ffmpeg libsm6 libxext6 git ninja-build libglib2.0-0 libsm6 libxrender-dev libxext6 \
+    libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libgstreamer-plugins-bad1.0-dev \
+    gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly \
+    gstreamer1.0-libav gstreamer1.0-tools gstreamer1.0-x libcairo2-dev libxt-dev libgirepository1.0-dev \
+    && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y python3 python3-pip && apt-get clean
+RUN pip install -U pip && pip install pycairo PyGObject onnxruntime mmdeploy_runtime
+RUN apt-get install -y python3-gst-1.0
+RUN pip install --ignore-installed openmim==0.3.9 tensorrt
+RUN mim install mmengine mmcv mmyolo mmdeploy==1.2.0
+
+WORKDIR /app
+COPY legacy/requirements.txt /app/legacy/requirements.txt
+RUN pip install -r /app/legacy/requirements.txt
+COPY legacy/ /app/legacy/
+COPY app/ /app/app/
+ENV PYTHONPATH=/app
+
+CMD ["celery", "-A", "legacy.tasks", "worker", "-c", "12", "-n", "celery0@myhost", "--loglevel=info"]
