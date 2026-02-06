@@ -1,8 +1,10 @@
 """
 추론 파이프라인: 모델 로드(lifespan 1회), 배치/직렬화.
 - 스트리밍 파이프라인 유지 금지. 프레임/이미지 입력 → 검출 결과만 반환.
+- INFERENCE_MOCK=1 또는 미설정 시 mock(stub) 사용. 실제 모델은 별도 전환.
 """
 import logging
+import os
 from typing import Any, List
 
 logger = logging.getLogger(__name__)
@@ -10,14 +12,23 @@ logger = logging.getLogger(__name__)
 _model: Any = None
 
 
+def _is_mock() -> bool:
+    """환경 변수로 mock 모드 여부. 기본 True(개발 시 mock)."""
+    return os.environ.get("INFERENCE_MOCK", "1").strip() in ("1", "true", "yes")
+
+
 def load_model() -> None:
-    """lifespan에서 1회 호출. 실제 구현은 모델 파일 로드."""
+    """lifespan에서 1회 호출. INFERENCE_MOCK이면 stub, 아니면 실제 모델 로드."""
     global _model
     if _model is not None:
         return
-    # 스텁: 실제로는 YOLO/Detector 로드
-    _model = "stub"
-    logger.info("inference model loaded (stub)")
+    if _is_mock():
+        _model = "stub"
+        logger.info("inference model loaded (mock/stub)")
+        return
+    # 실제 모델 로드 (YOLO/Detector 등)
+    _model = "stub"  # TODO: 실제 로드로 교체
+    logger.info("inference model loaded")
 
 
 def detect(image_url: str | None = None, image_bytes: bytes | None = None) -> List[dict[str, Any]]:

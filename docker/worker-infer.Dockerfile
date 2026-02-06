@@ -1,8 +1,26 @@
-# Inference Worker: AI 추론, ai.events 발행 (GPU 이미지로 교체 가능)
-FROM python:3.11-slim
+# ========== 빌드 스테이지: uv로 휠만 다운로드 ==========
+FROM python:3.11-slim AS builder
+WORKDIR /build
+
+RUN pip install --no-cache-dir uv
+
+COPY pyproject.toml ./
+RUN uv pip compile pyproject.toml -o requirements.lock \
+    && uv pip download -d /wheelhouse -r requirements.lock
+
+COPY app/ ./app/
+
+# ========== 런타임: 오프라인 pip 설치만 ==========
+FROM python:3.11-slim AS runtime
 WORKDIR /app
-COPY app/ /app/app/
-COPY legacy/requirements.txt /app/legacy/requirements.txt
-RUN pip install --no-cache-dir -r /app/legacy/requirements.txt
-ENV PYTHONPATH=/app
+COPY --from=builder /wheelhouse /wheelhouse
+COPY --from=builder /build/requirements.lock /tmp/requirements.lock
+RUN pip install --no-cache-dir --no-index --find-links=/wheelhouse \
+    -r /tmp/requirements.lock --target /install \
+    && rm -rf /wheelhouse /tmp/requirements.lock
+
+COPY --from=builder /build/app ./app
+ENV PYTHONPATH=/install:/app
+ENV INFERENCE_MOCK=1
+
 CMD ["python", "-m", "app.services.worker_infer.main"]

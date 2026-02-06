@@ -22,6 +22,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 3
+    volumes:
+      - ../app:/app/app:ro
 
   orchestrator:
     build:
@@ -35,6 +37,8 @@ services:
       - TZ=Asia/Seoul
     depends_on:
       - kafka
+    volumes:
+      - ../app:/app/app:ro
 
   stream-worker:
     build:
@@ -49,6 +53,8 @@ services:
       - TZ=Asia/Seoul
     depends_on:
       - kafka
+    volumes:
+      - ../app:/app/app:ro
 
   infer-worker:
     build:
@@ -62,6 +68,8 @@ services:
       - TZ=Asia/Seoul
     depends_on:
       - kafka
+    volumes:
+      - ../app:/app/app:ro
 
   kafka:
     image: apache/kafka:latest

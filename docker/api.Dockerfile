@@ -1,23 +1,30 @@
-# API 서버 이미지: legacy + app, 진입점 app.main:app
-FROM openmmlab/mmdeploy:ubuntu20.04-cuda11.8-mmdeploy
-ARG DEBIAN_FRONTEND=noninteractive
-RUN apt-get update && \
-    apt-get install -y -f ffmpeg libsm6 libxext6 git ninja-build libglib2.0-0 libsm6 libxrender-dev libxext6 \
-    libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libgstreamer-plugins-bad1.0-dev \
-    gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly \
-    gstreamer1.0-libav gstreamer1.0-tools gstreamer1.0-x libcairo2-dev libxt-dev libgirepository1.0-dev \
+# ========== 빌드 스테이지: uv로 휠만 다운로드 (런타임에 uv 미포함) ==========
+FROM python:3.11-slim AS builder
+WORKDIR /build
+
+RUN pip install --no-cache-dir uv
+
+COPY pyproject.toml ./
+# lock 생성 → wheelhouse 다운로드 (네트워크/미러 이슈는 빌드 시점에만)
+RUN uv pip compile pyproject.toml -o requirements.lock \
+    && uv pip download -d /wheelhouse -r requirements.lock
+
+COPY app/ ./app/
+
+# ========== 런타임 스테이지: pip만 사용, 오프라인 설치 ==========
+FROM python:3.11-slim AS runtime
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
     && rm -rf /var/lib/apt/lists/*
-RUN apt-get update && apt-get install -y python3 python3-pip && apt-get clean
-RUN pip install -U pip && pip install pycairo PyGObject onnxruntime mmdeploy_runtime
-RUN apt-get install -y python3-gst-1.0
-RUN pip install --ignore-installed openmim==0.3.9 tensorrt
-RUN mim install mmengine mmcv mmyolo mmdeploy==1.2.0
 
 WORKDIR /app
-COPY legacy/requirements.txt /app/legacy/requirements.txt
-RUN pip install -r /app/legacy/requirements.txt
-COPY legacy/ /app/legacy/
-COPY app/ /app/app/
-ENV PYTHONPATH=/app
+COPY --from=builder /wheelhouse /wheelhouse
+COPY --from=builder /build/requirements.lock /tmp/requirements.lock
+RUN pip install --no-cache-dir --no-index --find-links=/wheelhouse \
+    -r /tmp/requirements.lock --target /install \
+    && rm -rf /wheelhouse /tmp/requirements.lock
 
-CMD ["uvicorn", "app.main:app", "--port=8000", "--host=0.0.0.0"]
+COPY --from=builder /build/app ./app
+ENV PYTHONPATH=/install:/app
+
+CMD ["uvicorn", "app.gateway.main:app", "--port=8000", "--host=0.0.0.0"]
