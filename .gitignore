@@ -16,3 +16,4 @@ tensorrt
 **/*__pycache__
 **/*.pyc
 **/*test*
+!scripts/smoke_test.sh
