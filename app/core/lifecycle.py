@@ -1,0 +1,3 @@
+"""리소스 초기화/종료 (lifespan)."""
+# from contextlib import asynccontextmanager
+# async def lifespan(app): ...
