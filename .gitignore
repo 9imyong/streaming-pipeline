@@ -1,0 +1,17 @@
+deploy/
+*.zip
+*.sh
+*.gz
+tensorrt_folder_outputJan15
+models/
+mysql/
+*.png
+*.jpg
+*.mp4
+**/pth
+trt/
+tensorrt
+*.env
+**/*__pycache__
+**/*.pyc
+**/*test*

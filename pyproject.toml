@@ -1,0 +1,38 @@
+[project]
+name = "streaming-pipeline"
+version = "0.1.0"
+description = "영상 스트리밍 AI 파이프라인 서버"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]",
+    "python-dotenv>=0.20.0",
+    "pydantic-settings",
+    "pymysql",
+    "redis",
+    "celery[redis]",
+    "httpx",
+    "aiofiles",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "ruff",
+    "mypy",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.format]
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_ignores = true
