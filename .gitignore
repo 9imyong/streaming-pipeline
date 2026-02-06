@@ -1,6 +1,7 @@
 deploy/
 *.zip
 *.sh
+!scripts/*.sh
 *.gz
 tensorrt_folder_outputJan15
 models/
