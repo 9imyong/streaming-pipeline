@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
 import {
   type ColumnDef,
   getCoreRowModel,
@@ -9,8 +8,7 @@ import {
   flexRender,
 } from "@tanstack/react-table";
 import { AlertCircle } from "lucide-react";
-import { fetchEvents } from "@/lib/api";
-import { eventsQueryOptions } from "@/lib/query/query-client";
+import { useEventsRealtime } from "@/lib/realtime/use-events-realtime";
 import type { StreamEvent } from "@/lib/api/types";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -56,19 +54,19 @@ export function EventsTable({
   const [typeFilter, setTypeFilter] = useState("");
   const [selectedEvent, setSelectedEvent] = useState<StreamEvent | null>(null);
 
-  const params = useMemo(
-    () => ({
-      stream_id: streamIdFilter.trim() || undefined,
-      limit,
-      level: levelFilter || undefined,
-      type: typeFilter.trim() || undefined,
-    }),
-    [streamIdFilter, limit, levelFilter, typeFilter]
-  );
-
-  const { data: events = [], isLoading, error, refetch } = useQuery({
-    ...eventsQueryOptions(params),
-    queryFn: () => fetchEvents(params),
+  const {
+    events,
+    status,
+    isLoading,
+    error,
+    refetch,
+  } = useEventsRealtime({
+    stream_id: streamIdFilter.trim() || undefined,
+    limit,
+    level: levelFilter || undefined,
+    type: typeFilter.trim() || undefined,
+    useSse: true,
+    toastOnLevel: true,
   });
 
   const filteredData = useMemo(() => {
@@ -142,7 +140,7 @@ export function EventsTable({
     return (
       <ErrorState
         message={`Failed to load events: ${error.message}`}
-        onRetry={() => refetch()}
+        onRetry={() => void refetch()}
       />
     );
   }
@@ -187,6 +185,24 @@ export function EventsTable({
             onChange={(e) => setTypeFilter(e.target.value)}
             className="max-w-xs"
           />
+          <Badge
+            variant={
+              status === "connected"
+                ? "default"
+                : status === "reconnecting"
+                  ? "secondary"
+                  : "outline"
+            }
+            className="shrink-0"
+          >
+            {status === "connected"
+              ? "CONNECTED"
+              : status === "reconnecting"
+                ? "RECONNECTING"
+                : status === "offline" || status === "polling"
+                  ? "OFFLINE"
+                  : "—"}
+          </Badge>
           <span className="text-sm text-muted-foreground">
             Limit: {limit} · {filteredData.length} shown
           </span>

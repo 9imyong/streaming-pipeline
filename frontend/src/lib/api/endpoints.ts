@@ -42,4 +42,15 @@ export const endpoints = {
     const q = search.toString();
     return `${PREFIX}/events${q ? `?${q}` : ""}`;
   },
+  /** SSE: GET /v1/events/stream?stream_id=&since= */
+  eventsStream: (params?: { stream_id?: string; since?: string }) => {
+    const search = new URLSearchParams();
+    if (params?.stream_id) search.set("stream_id", params.stream_id);
+    if (params?.since) search.set("since", params.since);
+    const q = search.toString();
+    return `${PREFIX}/events/stream${q ? `?${q}` : ""}`;
+  },
+
+  /** HLS: /hls/:streamId/index.m3u8 (baseUrl 기준) */
+  hlsPlaylist: (streamId: string) => `/hls/${streamId}/index.m3u8`,
 } as const;
