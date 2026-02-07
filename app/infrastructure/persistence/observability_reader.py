@@ -53,3 +53,23 @@ class DbObservabilityReader(ObservabilityReader):
                     )
                     return [dict(r) for r in cur.fetchall()]
         return await _run_in_executor(_run)
+
+    async def get_stream_list(self, limit: int = 100) -> list[dict[str, Any]]:
+        def _run() -> list[dict[str, Any]]:
+            with get_connection() as conn:
+                with conn.cursor() as cur:
+                    cur.execute(
+                        f"SELECT channel_id, status, desired_state, assigned_worker_id, "
+                        f"restart_count, last_error, updated_at FROM {STREAMS_TABLE} "
+                        f"ORDER BY updated_at DESC LIMIT %s",
+                        (limit,),
+                    )
+                    rows = cur.fetchall()
+                    out = []
+                    for r in rows:
+                        d = dict(r)
+                        if d.get("updated_at") and hasattr(d["updated_at"], "isoformat"):
+                            d["updated_at"] = d["updated_at"].isoformat()
+                        out.append(d)
+                    return out
+        return await _run_in_executor(_run)
