@@ -7,6 +7,17 @@
 #
 # DB 초기화: docker exec -i streaming-mysql mysql -uroot -pdevpass streaming_pipeline_dev < app/infrastructure/persistence/migrations/001_streams_jobs_mysql.sql
 services:
+  nginx:
+    image: nginx:alpine
+    container_name: streaming-nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - hls_data:/data/hls:ro
+    depends_on:
+      api: { condition: service_healthy }
+    restart: unless-stopped
   api:
     build:
       context: ..
@@ -144,7 +155,7 @@ services:
     environment:
       - API_BASE_URL=http://api:8000
       # 브라우저가 m3u8 요청을 보내므로 호스트에서 접근 가능한 주소 사용 (API는 8000으로 노출)
-      - HLS_BASE_URL=http://localhost:8000/hls
+      - HLS_BASE_URL=http://localhost/hls
     depends_on:
       - api
 
