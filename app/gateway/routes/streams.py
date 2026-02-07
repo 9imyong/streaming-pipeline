@@ -51,7 +51,8 @@ class StartStreamResponse(BaseModel):
 class StreamStatusResponse(BaseModel):
     channel_id: str
     status: str
-    worker_id: str | None = None
+    worker_id: str | None = None  # 처리 워커 (단일 워커면 모두 동일, 예: stream-worker-1)
+    current_job_id: str | None = None  # 이 채널 최근 START 작업 ID (요청마다 다름)
     desired_state: str | None = None
     last_error: str | None = None
     restart_count: int = 0
@@ -205,6 +206,7 @@ async def get_stream_status(
         channel_id=result.channel_id,
         status=result.status,
         worker_id=result.worker_id,
+        current_job_id=getattr(result, "current_job_id", None),
         desired_state=result.desired_state,
         last_error=result.last_error,
         restart_count=getattr(result, "restart_count", 0),

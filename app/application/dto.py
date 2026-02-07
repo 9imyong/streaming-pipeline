@@ -26,7 +26,7 @@ class StartStreamResult:
 
 @dataclass
 class StreamStatusResult:
-    """get_stream 유스케이스 반환값."""
+    """get_stream 유스케이스 반환값. worker_id=처리 워커(동일 워커면 동일), current_job_id=이 채널 최근 START 작업 ID."""
     channel_id: str
     status: str
     worker_id: Optional[str] = None
@@ -34,6 +34,7 @@ class StreamStatusResult:
     last_error: Optional[str] = None
     restart_count: int = 0
     pipeline_params: Optional[dict[str, Any]] = None
+    current_job_id: Optional[str] = None
 
 
 @dataclass

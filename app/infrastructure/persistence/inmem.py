@@ -84,9 +84,14 @@ class InMemoryJobRepository(JobRepository):
 
     def __init__(self) -> None:
         self._by_key: dict[str, dict] = {}
+        self._by_channel: dict[str, list[str]] = {}  # channel_id -> [job_id, ...] (최신이 마지막)
 
     async def get_by_idempotency_key(self, idempotency_key: str) -> Optional[dict]:
         return self._by_key.get(idempotency_key)
+
+    async def get_latest_job_id_by_channel(self, channel_id: str) -> Optional[str]:
+        lst = self._by_channel.get(channel_id, [])
+        return lst[-1] if lst else None
 
     async def create(
         self,
@@ -100,3 +105,4 @@ class InMemoryJobRepository(JobRepository):
             "channel_id": channel_id,
             "command": command,
         }
+        self._by_channel.setdefault(channel_id, []).append(job_id)

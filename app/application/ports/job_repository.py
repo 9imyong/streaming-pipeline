@@ -10,6 +10,11 @@ class JobRepository(ABC):
         ...
 
     @abstractmethod
+    async def get_latest_job_id_by_channel(self, channel_id: str) -> Optional[str]:
+        """채널의 최근 START job_id. 없으면 None. (worker_id와 구분: worker_id=처리 워커, job_id=요청별 작업 ID)"""
+        ...
+
+    @abstractmethod
     async def create(
         self,
         job_id: str,
