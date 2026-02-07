@@ -1,0 +1,13 @@
+# 프로덕션 오버라이드: app 코드 마운트 제거 → 이미지에 박힌 코드만 사용.
+# streamlit은 profile=dev 이므로 prod up 시 자동 제외. 메인 UI는 web(Next.js).
+# 사용: docker compose -f docker/docker-compose.yml -f docker/docker-compose.prod.yml up -d
+# 배포 전 반드시 이미지 빌드: docker compose -f docker/docker-compose.yml build
+services:
+  api:
+    volumes: []
+  orchestrator:
+    volumes: []
+  stream-worker:
+    volumes: []
+  infer-worker:
+    volumes: []
