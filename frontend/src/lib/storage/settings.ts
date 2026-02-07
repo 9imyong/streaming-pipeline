@@ -5,10 +5,13 @@
 
 const KEY_PREFIX = "streaming-console:";
 
+export type Role = "ADMIN" | "OPERATOR" | "VIEWER";
+
 const keys = {
   apiBaseUrl: `${KEY_PREFIX}apiBaseUrl`,
   apiKey: `${KEY_PREFIX}apiKey`,
   pollIntervalMs: `${KEY_PREFIX}pollIntervalMs`,
+  role: `${KEY_PREFIX}role`,
 } as const;
 
 function safeGetItem(key: string): string | null {
@@ -42,6 +45,14 @@ export interface StoredSettings {
   apiBaseUrl: string;
   apiKey: string;
   pollIntervalMs: number;
+  role: Role;
+}
+
+const DEFAULT_ROLE: Role = "OPERATOR";
+
+function parseRole(v: string | null): Role {
+  if (v === "ADMIN" || v === "OPERATOR" || v === "VIEWER") return v;
+  return DEFAULT_ROLE;
 }
 
 export function getSettings(): StoredSettings {
@@ -53,7 +64,16 @@ export function getSettings(): StoredSettings {
     const n = Number(v);
     return Number.isFinite(n) && n > 0 ? n : 2000;
   })();
-  return { apiBaseUrl, apiKey, pollIntervalMs };
+  const role = parseRole(safeGetItem(keys.role));
+  return { apiBaseUrl, apiKey, pollIntervalMs, role };
+}
+
+export function getRole(): Role {
+  return parseRole(safeGetItem(keys.role));
+}
+
+export function setRole(value: Role): void {
+  safeSetItem(keys.role, value);
 }
 
 export function setApiBaseUrl(value: string): void {
@@ -87,4 +107,13 @@ export function clearSettings(): void {
   safeRemoveItem(keys.apiBaseUrl);
   safeRemoveItem(keys.apiKey);
   safeRemoveItem(keys.pollIntervalMs);
+  safeRemoveItem(keys.role);
+}
+
+export function canEditSettings(role: Role): boolean {
+  return role === "ADMIN";
+}
+
+export function canRunStreamCommands(role: Role): boolean {
+  return role === "ADMIN" || role === "OPERATOR";
 }

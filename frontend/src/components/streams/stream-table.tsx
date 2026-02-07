@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   type ColumnDef,
@@ -12,6 +12,7 @@ import {
 import { toast } from "sonner";
 import { fetchStreams, streamStart, streamStop } from "@/lib/api";
 import { streamListQueryOptions } from "@/lib/query/query-client";
+import { getRole, canRunStreamCommands } from "@/lib/storage/settings";
 import type { StreamListItem, StreamStatus } from "@/lib/api/types";
 import { StreamStatusBadge } from "./stream-status-badge";
 import { Button } from "@/components/ui/button";
@@ -94,6 +95,10 @@ const columns: ColumnDef<StreamListItem>[] = [
 
 function StreamRowActions({ row }: { row: StreamListItem }) {
   const queryClient = useQueryClient();
+  const [canRunCommands, setCanRunCommands] = useState(false);
+  useEffect(() => {
+    setCanRunCommands(canRunStreamCommands(getRole()));
+  }, []);
   const isRunning = row.status === "RUNNING";
   const isStopped = row.status === "STOPPED" || row.status === "CREATED";
 
@@ -128,13 +133,23 @@ function StreamRowActions({ row }: { row: StreamListItem }) {
       <Button size="sm" variant="outline" asChild>
         <Link href={`/streams/${row.channel_id}`}>Detail</Link>
       </Button>
-      {isStopped && (
-        <Button size="sm" variant="default" onClick={handleStart}>
+      {canRunCommands && isStopped && (
+        <Button
+          size="sm"
+          variant="default"
+          onClick={handleStart}
+          title="STOPPED/CREATED 상태에서만 Start 가능"
+        >
           Start
         </Button>
       )}
-      {isRunning && (
-        <Button size="sm" variant="destructive" onClick={handleStop}>
+      {canRunCommands && isRunning && (
+        <Button
+          size="sm"
+          variant="destructive"
+          onClick={handleStop}
+          title="RUNNING 스트림 중단"
+        >
           Stop
         </Button>
       )}
@@ -142,13 +157,17 @@ function StreamRowActions({ row }: { row: StreamListItem }) {
   );
 }
 
+const STREAMS_PAGE_LIMIT = 100;
+const LARGE_TABLE_WARNING = 1000;
+
 export function StreamTable() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("");
+  const listParams = { limit: STREAMS_PAGE_LIMIT };
 
   const { data: streams = [], isLoading, error, refetch } = useQuery({
-    ...streamListQueryOptions,
-    queryFn: fetchStreams,
+    ...streamListQueryOptions(listParams),
+    queryFn: () => fetchStreams(listParams),
   });
 
   const filteredData = useMemo(() => {
@@ -199,8 +218,18 @@ export function StreamTable() {
     );
   }
 
+  const showLargeWarning = streams.length >= LARGE_TABLE_WARNING;
+  const showLimitNotice = streams.length >= STREAMS_PAGE_LIMIT;
+
   return (
     <div className="space-y-4">
+      {(showLargeWarning || showLimitNotice) && (
+        <div className="rounded border border-amber-500/50 bg-amber-500/10 px-3 py-2 text-sm text-amber-800 dark:text-amber-200">
+          {showLargeWarning
+            ? `표시 제한 ${STREAMS_PAGE_LIMIT}건. 1,000건 이상일 수 있습니다. 필터로 범위를 좁히세요.`
+            : `표시 ${streams.length}건 (limit=${STREAMS_PAGE_LIMIT}). 더 보려면 필터 사용.`}
+        </div>
+      )}
       <div className="flex flex-wrap items-center gap-4">
         <Input
           placeholder="Search by channel ID or worker..."
