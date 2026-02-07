@@ -31,6 +31,19 @@ class DbJobRepository(JobRepository):
 
         return await _run_in_executor(_run)
 
+    async def get_latest_job_id_by_channel(self, channel_id: str) -> Optional[str]:
+        def _run() -> Optional[str]:
+            with get_connection() as conn:
+                with conn.cursor() as cur:
+                    cur.execute(
+                        f"SELECT job_id FROM {JOBS_TABLE} WHERE channel_id = %s ORDER BY created_at DESC LIMIT 1",
+                        (channel_id,),
+                    )
+                    row = cur.fetchone()
+                    return row["job_id"] if row else None
+
+        return await _run_in_executor(_run)
+
     async def create(
         self,
         job_id: str,

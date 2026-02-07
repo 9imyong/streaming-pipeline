@@ -101,11 +101,12 @@ class StopStreamRunner:
 class GetStreamRunner:
     """get_stream 유스케이스 실행기."""
 
-    def __init__(self, stream_repo: StreamRepository):
+    def __init__(self, stream_repo: StreamRepository, job_repo: JobRepository | None = None):
         self._stream_repo = stream_repo
+        self._job_repo = job_repo
 
     async def run(self, channel_id: str) -> StreamStatusResult:
-        return await get_stream(self._stream_repo, channel_id)
+        return await get_stream(self._stream_repo, channel_id, job_repo=self._job_repo)
 
 
 class GetAiLatestRunner:
@@ -137,9 +138,10 @@ def get_stop_stream_use_case(
 
 def get_get_stream_use_case(
     stream_repo: StreamRepository = Depends(get_stream_repository),
+    job_repo: JobRepository = Depends(get_job_repository),
 ) -> GetStreamRunner:
     """GET /v1/streams/{channel_id} 에서 사용."""
-    return GetStreamRunner(stream_repo)
+    return GetStreamRunner(stream_repo, job_repo)
 
 
 def get_ai_latest_store(request: Request) -> AiLatestStore:
