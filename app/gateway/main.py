@@ -60,6 +60,21 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="streaming-pipeline-gateway", version="0.1.0", lifespan=lifespan)
+
+
+@app.middleware("http")
+async def hls_cache_control(request: Request, call_next):
+    """HLS 응답에 Cache-Control 추가. .m3u8은 no-cache, .ts는 짧은 캐시 (nginx 미사용 시 보완)."""
+    response = await call_next(request)
+    path = request.url.path or ""
+    if path.startswith("/hls"):
+        if ".m3u8" in path:
+            response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        elif ".ts" in path:
+            response.headers["Cache-Control"] = "max-age=2, public"
+    return response
+
+
 app.include_router(streams.router, prefix="/v1")
 app.include_router(observability.router, prefix="/v1")
 app.include_router(health.router)
