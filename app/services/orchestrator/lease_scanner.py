@@ -13,6 +13,7 @@ from app.application.ports.stream_repository import StreamRepository
 from app.domain.stream_state_machine import DesiredState, StreamState, validate_transition
 from app.infrastructure.messaging.kafka.schemas import command_payload
 from app.infrastructure.messaging.kafka.topics import STREAM_COMMANDS
+from app.infrastructure.logging.stream_extra import stream_log_extra
 
 logger = logging.getLogger(__name__)
 
@@ -112,6 +113,7 @@ async def run_lease_expiry_scanner(
                     "lease expired reassign channel_id=%s restart_count=%s",
                     channel_id,
                     restart_count + 1,
+                    extra=stream_log_extra(channel_id, event_type="lease_expired", restart_count=restart_count + 1),
                 )
         except asyncio.CancelledError:
             raise
