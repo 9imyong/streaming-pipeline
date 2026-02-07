@@ -4,9 +4,9 @@ WORKDIR /build
 
 RUN pip install --no-cache-dir uv
 
-COPY pyproject.toml ./
-# lock 생성 → wheelhouse 다운로드 (네트워크/미러 이슈는 빌드 시점에만)
-RUN uv pip compile pyproject.toml -o requirements.lock \
+COPY docker/api-requirements.in ./
+# lock 생성 → wheelhouse 다운로드 (PyGObject 제외)
+RUN uv pip compile api-requirements.in -o requirements.lock \
     && pip download -d /wheelhouse -r requirements.lock
 
 COPY app/ ./app/

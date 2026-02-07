@@ -1,5 +1,10 @@
-# 스트리밍 인프라 스택: API · Orchestrator · Stream Worker · Kafka · MySQL
-# 사용: docker compose -f docker/docker-compose.yml up -d
+# 스트리밍 인프라 스택: API · Orchestrator · Stream Worker · Kafka · MySQL · Redis · UI
+#
+# [개발] docker compose -f docker/docker-compose.yml up -d
+#   - app 코드는 volumes로 마운트됨 → 코드 수정 후 컨테이너만 재시작하면 반영 (이미지 재빌드 불필요)
+# [프로덕션] docker compose -f docker/docker-compose.yml -f docker/docker-compose.prod.yml up -d
+#   - app 마운트 없음 → 이미지에 박힌 코드로 실행 (반드시 이미지 빌드 후 배포)
+#
 # DB 초기화: docker exec -i streaming-mysql mysql -uroot -pdevpass streaming_pipeline_dev < app/infrastructure/persistence/migrations/001_streams_jobs_mysql.sql
 services:
   api:
@@ -12,7 +17,10 @@ services:
       - "8000:8000"
     env_file: ../.env
     environment:
+      - COMMAND_BUS=kafka
       - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
       - HOST=mysql
       - PORT=3306
       - USERNAME=root
@@ -20,15 +28,17 @@ services:
       - DBNAME=streaming_pipeline_dev
       - TZ=Asia/Seoul
     depends_on:
-      kafka: { condition: service_started }
+      kafka-init: { condition: service_completed_successfully }
       mysql: { condition: service_healthy }
+      redis: { condition: service_started }
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health/live"]
       interval: 10s
       timeout: 5s
       retries: 3
-    volumes:
+    volumes:  # 개발: 코드 마운트. 프로덕션은 docker-compose.prod.yml 로 오버라이드
       - ../app:/app/app:ro
+      - hls_data:/data/hls  # HLS 세그먼트 서빙 (stream-worker와 공유)
 
   orchestrator:
     build:
@@ -40,6 +50,7 @@ services:
       - "9090:9090"
     env_file: ../.env
     environment:
+      - ASSIGNED_WORKER_ID=stream-worker-1
       - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
       - HOST=mysql
       - PORT=3306
@@ -48,9 +59,9 @@ services:
       - DBNAME=streaming_pipeline_dev
       - TZ=Asia/Seoul
     depends_on:
-      kafka: { condition: service_started }
+      kafka-init: { condition: service_completed_successfully }
       mysql: { condition: service_healthy }
-    volumes:
+    volumes:  # 개발: 코드 마운트. 프로덕션은 docker-compose.prod.yml 로 오버라이드
       - ../app:/app/app:ro
 
   stream-worker:
@@ -61,6 +72,9 @@ services:
     container_name: streaming-stream-worker
     ports:
       - "9091:9091"
+    # 호스트/PC에서 올린 RTSP 접속용 (예: rtsp://host.docker.internal:554/stream)
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     env_file: ../.env
     environment:
       - WORKER_ID=stream-worker-1
@@ -71,11 +85,13 @@ services:
       - PASSWORD=devpass
       - DBNAME=streaming_pipeline_dev
       - TZ=Asia/Seoul
+      - HLS_OUTPUT_DIR=/data/hls
     depends_on:
-      kafka: { condition: service_started }
+      kafka-init: { condition: service_completed_successfully }
       mysql: { condition: service_healthy }
-    volumes:
+    volumes:  # 개발: 코드 마운트. 프로덕션은 docker-compose.prod.yml 로 오버라이드
       - ../app:/app/app:ro
+      - hls_data:/data/hls
 
   infer-worker:
     build:
@@ -86,10 +102,13 @@ services:
     env_file: ../.env
     environment:
       - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
       - TZ=Asia/Seoul
     depends_on:
       - kafka
-    volumes:
+      - redis
+    volumes:  # 개발: 코드 마운트. 프로덕션은 docker-compose.prod.yml 로 오버라이드
       - ../app:/app/app:ro
 
   mysql:
@@ -107,6 +126,27 @@ services:
       interval: 5s
       timeout: 3s
       retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: streaming-redis
+    ports:
+      - "6379:6379"
+
+  ui:
+    build:
+      context: ..
+      dockerfile: docker/ui-streamlit.Dockerfile
+    image: streaming-ui:latest
+    container_name: streaming-ui
+    ports:
+      - "8501:8501"
+    environment:
+      - API_BASE_URL=http://api:8000
+      # 브라우저가 m3u8 요청을 보내므로 호스트에서 접근 가능한 주소 사용 (API는 8000으로 노출)
+      - HLS_BASE_URL=http://localhost:8000/hls
+    depends_on:
+      - api
 
   kafka:
     image: apache/kafka:latest
@@ -126,3 +166,20 @@ services:
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+
+  # 토픽 미리 생성 → orchestrator/stream-worker 시작 시 "Topic not found" 로그 방지
+  kafka-init:
+    image: apache/kafka:latest
+    container_name: streaming-kafka-init
+    depends_on:
+      kafka: { condition: service_started }
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        sleep 10
+        /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic stream.commands --partitions 1 --replication-factor 1
+        /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic stream.events --partitions 1 --replication-factor 1
+    restart: "no"
+
+volumes:
+  hls_data: {}  # HLS 세그먼트/플레이리스트 (stream-worker 쓰기, api 읽기)
