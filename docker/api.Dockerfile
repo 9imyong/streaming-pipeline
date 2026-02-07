@@ -7,7 +7,7 @@ RUN pip install --no-cache-dir uv
 COPY pyproject.toml ./
 # lock 생성 → wheelhouse 다운로드 (네트워크/미러 이슈는 빌드 시점에만)
 RUN uv pip compile pyproject.toml -o requirements.lock \
-    && uv pip download -d /wheelhouse -r requirements.lock
+    && pip download -d /wheelhouse -r requirements.lock
 
 COPY app/ ./app/
 
@@ -27,4 +27,4 @@ RUN pip install --no-cache-dir --no-index --find-links=/wheelhouse \
 COPY --from=builder /build/app ./app
 ENV PYTHONPATH=/install:/app
 
-CMD ["uvicorn", "app.gateway.main:app", "--port=8000", "--host=0.0.0.0"]
+CMD ["python", "-m", "uvicorn", "app.gateway.main:app", "--port=8000", "--host=0.0.0.0"]

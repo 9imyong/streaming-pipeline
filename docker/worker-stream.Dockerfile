@@ -6,7 +6,7 @@ RUN pip install --no-cache-dir uv
 
 COPY pyproject.toml ./
 RUN uv pip compile pyproject.toml -o requirements.lock \
-    && uv pip download -d /wheelhouse -r requirements.lock
+    && pip download -d /wheelhouse -r requirements.lock
 
 COPY app/ ./app/
 
