@@ -45,6 +45,36 @@ uv run pytest
 uv run ruff check app/
 ```
 
+### Smoke 검증 (HLS / RTSP 분리)
+
+- **HLS**: videotestsrc → hlssink2 로 세그먼트·플레이리스트 생성 여부 확인.
+- **RTSP**: rtspsrc → fakesink 로 SDP 수신·연결 여부 확인.
+
+**로컬 (uv)**
+
+```bash
+# HLS smoke (기본 5초, /tmp/smoke_hls 에 index.m3u8 생성 확인)
+uv run python -m app.smoke hls [--out-dir /tmp/smoke_hls] [--run-sec 5]
+
+# RTSP smoke (URL 필수, 기본 5초·latency 300ms·timeout 15초)
+uv run python -m app.smoke rtsp --url rtsp://host/path [--run-sec 5] [--latency-ms 300] [--timeout-ms 15000]
+```
+
+**Docker (stream-worker 이미지)**
+
+```bash
+# 프로젝트 루트에서
+cd docker
+./run-smoke.sh hls
+./run-smoke.sh rtsp --url rtsp://host/path
+
+# 또는 docker compose 직접
+docker compose run --rm stream-worker python3 -m app.smoke hls
+docker compose run --rm stream-worker python3 -m app.smoke rtsp --url rtsp://210.99.70.120:1935/live/cctv001.stream
+```
+
+- `run-smoke.sh` 는 stream-worker 이미지(GStreamer 포함) 안에서 smoke 실행. 이미지가 없으면 `docker compose build stream-worker` 후 실행.
+
 ---
 
 ## 2단계: 이미지 완료 후 — docker-compose + 코드 마운트
