@@ -14,7 +14,7 @@ from app.infrastructure.logging.stream_extra import stream_log_extra
 
 logger = logging.getLogger(__name__)
 
-LEASE_TTL_SECONDS = 30
+LEASE_TTL_SECONDS = 45  # 파이프라인 기동·첫 갱신 대기 여유
 
 
 async def handle_start(
@@ -34,26 +34,26 @@ async def handle_start(
 
     row = await stream_repo.get(channel_id)
     if not row:
-        logger.warning("handle_start stream not found channel_id=%s", channel_id)
+        logger.warning("handle_start stream not found channel_id=%s (add channel first)", channel_id)
         return
 
     desired = (row.get("desired_state") or "").lower()
     if desired == DesiredState.STOPPED.value:
-        # 이미 중지 요청됨. 할당하지 않음
         logger.info("handle_start skip desired=stopped channel_id=%s", channel_id)
         return
 
     current = row.get("status") or StreamState.PENDING.value
     try:
         validate_transition(StreamState(current), StreamState.ASSIGNED)
-    except Exception:
-        logger.debug("handle_start transition not allowed channel_id=%s status=%s", channel_id, current)
+    except Exception as e:
+        logger.warning("handle_start transition not allowed channel_id=%s status=%s: %s", channel_id, current, e)
         return
 
     worker_id = assign_worker_fn(channel_id)
+    logger.info("handle_start assigning channel_id=%s -> worker_id=%s", channel_id, worker_id)
     acquired = await lease_store.acquire(channel_id, worker_id, LEASE_TTL_SECONDS)
     if not acquired:
-        logger.info("handle_start lease not acquired channel_id=%s (another worker or still held)", channel_id)
+        logger.warning("handle_start lease not acquired channel_id=%s worker_id=%s (row may already be assigned)", channel_id, worker_id)
         return
 
     # lease_store.acquire (DbLeaseStore)가 이미 assigned_worker_id, lease_expires_at, status=assigned 설정
