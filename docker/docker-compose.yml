@@ -1,7 +1,6 @@
-# 스트리밍 인프라 스택: API · Orchestrator · Stream Worker 독립 배포
-# 사용: docker compose -f docker/docker-compose.streaming.yml up -d
-# API만: docker compose -f docker/docker-compose.streaming.yml up -d api
-# 워커만: docker compose -f docker/docker-compose.streaming.yml up -d stream-worker
+# 스트리밍 인프라 스택: API · Orchestrator · Stream Worker · Kafka · MySQL
+# 사용: docker compose -f docker/docker-compose.yml up -d
+# DB 초기화: docker exec -i streaming-mysql mysql -uroot -pdevpass streaming_pipeline_dev < app/infrastructure/persistence/migrations/001_streams_jobs_mysql.sql
 services:
   api:
     build:
@@ -14,9 +13,15 @@ services:
     env_file: ../.env
     environment:
       - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - HOST=mysql
+      - PORT=3306
+      - USERNAME=root
+      - PASSWORD=devpass
+      - DBNAME=streaming_pipeline_dev
       - TZ=Asia/Seoul
     depends_on:
-      - kafka
+      kafka: { condition: service_started }
+      mysql: { condition: service_healthy }
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health/live"]
       interval: 10s
@@ -34,9 +39,15 @@ services:
     env_file: ../.env
     environment:
       - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - HOST=mysql
+      - PORT=3306
+      - USERNAME=root
+      - PASSWORD=devpass
+      - DBNAME=streaming_pipeline_dev
       - TZ=Asia/Seoul
     depends_on:
-      - kafka
+      kafka: { condition: service_started }
+      mysql: { condition: service_healthy }
     volumes:
       - ../app:/app/app:ro
 
@@ -70,6 +81,20 @@ services:
       - kafka
     volumes:
       - ../app:/app/app:ro
+
+  mysql:
+    image: mysql:8.0
+    container_name: streaming-mysql
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: devpass
+      MYSQL_DATABASE: streaming_pipeline_dev
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-pdevpass"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
 
   kafka:
     image: apache/kafka:latest

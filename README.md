@@ -84,6 +84,7 @@ streaming-platform/
 └── README.md
 ```
 
+
 ---
 
 ## 5. 스트리밍 처리 흐름
@@ -147,13 +148,34 @@ ai.events
 # uv 로컬
 uv sync && uv run uvicorn app.gateway.main:app --reload --port 8000
 
-# docker-compose (코드 마운트)
-docker compose -f docker/docker-compose.streaming.yml -f docker/docker-compose.streaming.dev.yml up -d
+# docker-compose (전체 스택: API, Orchestrator, Worker, Kafka, MySQL)
+docker compose -f docker/docker-compose.yml up -d
 
 # KIND
 ./scripts/kind_create.sh
 ./scripts/kind_load_images.sh
 ./scripts/deploy_k8s.sh
+```
+
+### 8.1 스모크 테스트 (START/STOP → Kafka → Orchestrator)
+
+1. **DB 초기화** (최초 1회):  
+   `docker exec -i streaming-mysql mysql -uroot -pdevpass streaming_pipeline_dev < app/infrastructure/persistence/migrations/001_streams_jobs_mysql.sql`
+2. **START**:  
+   `curl -s -X POST http://localhost:8000/v1/streams -H "Content-Type: application/json" -d '{"channel_id":"ch1","source_rtsp":"rtsp://example/stream"}'`  
+   → 202, `job_id` 수신. 기대 로그: API `command_bus.publish key=ch1 command=START`, Orchestrator `handle_start assigned channel_id=ch1 worker_id=...`
+3. **STOP**:  
+   `curl -s -X DELETE http://localhost:8000/v1/streams/ch1`  
+   → 202. 기대 로그: API `command=STOP`, Orchestrator `handle_stop released lease channel_id=ch1`
+
+### 8.2 DB 검증 쿼리 예시
+
+```sql
+-- streams 상태 확인
+SELECT channel_id, status, desired_state, assigned_worker_id, updated_at FROM streams;
+
+-- jobs 멱등 기록 확인
+SELECT job_id, channel_id, idempotency_key, command, created_at FROM jobs ORDER BY created_at DESC LIMIT 10;
 ```
 
 ---
