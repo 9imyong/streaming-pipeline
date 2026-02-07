@@ -7,6 +7,7 @@ import uuid
 from typing import Any
 
 from app.application.ports.event_bus import EventBus
+from app.application.ports.ai_latest_store import AiLatestStore
 from app.services.worker_infer.pipeline import detect
 from app.services.worker_infer.emit_ai_events import emit_ai_event
 
@@ -28,6 +29,7 @@ async def handle_inference_request(
     image_url: str | None = None,
     image_bytes: bytes | None = None,
     frame_pts: float | None = None,
+    ai_latest_store: AiLatestStore | None = None,
 ) -> None:
     """
     추론 1건 처리. 이미지 URL이면 다운로드 후 detect; 바이트면 저장 후 URL 생성해 detect.
@@ -41,4 +43,7 @@ async def handle_inference_request(
         logger.warning("handle_inference_request no image_url or image_bytes")
         return
     detections = detect(image_url=snapshot_url, image_bytes=image_bytes)
-    await emit_ai_event(event_bus, channel_id, snapshot_url, detections, frame_pts)
+    await emit_ai_event(
+        event_bus, channel_id, snapshot_url, detections, frame_pts,
+        ai_latest_store=ai_latest_store,
+    )

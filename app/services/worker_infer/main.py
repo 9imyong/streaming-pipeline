@@ -23,14 +23,16 @@ async def lifespan_load_model() -> None:
 async def run() -> None:
     from app.infrastructure.messaging.kafka.producer import KafkaProducerWrapper
     from app.infrastructure.messaging.kafka.event_bus_kafka import KafkaEventBus
+    from app.infrastructure.redis.ai_latest_store import RedisAiLatestStore
     from app.services.worker_infer.handlers import handle_inference_request
 
     await lifespan_load_model()
     producer = KafkaProducerWrapper()
     await producer.start()
     event_bus = KafkaEventBus(producer)
-    # 스텁: 실제로는 inference 요청 토픽/큐 소비 루프에서 handle_inference_request 호출
-    logger.info("Inference Worker ready (stub loop)")
+    ai_latest_store = RedisAiLatestStore()
+    # 스텁: 실제로는 inference 요청 토픽/큐 소비 루프에서 handle_inference_request(..., ai_latest_store=ai_latest_store) 호출
+    logger.info("Inference Worker ready (stub loop, ai_latest_store wired)")
     try:
         while True:
             await asyncio.sleep(60)

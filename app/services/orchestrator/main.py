@@ -17,6 +17,8 @@ if str(_root) not in sys.path:
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+# 재시도 중 aiokafka의 반복 ERROR(Connection refused) 로그 억제. 우리 WARNING으로 충분.
+logging.getLogger("aiokafka").setLevel(logging.WARNING)
 
 METRICS_PORT = 9090
 
@@ -73,6 +75,7 @@ async def run() -> None:
             return
         cmd = value.get("command")
         if cmd == "START":
+            logger.info("received START command channel_id=%s", value.get("channel_id"))
             await handle_start(stream_repo, lease_store, assign_worker, value)
         elif cmd == "STOP":
             await handle_stop(stream_repo, lease_store, value)
