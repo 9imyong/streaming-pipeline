@@ -1,0 +1,91 @@
+# 스트리밍 인프라 스택: API · Orchestrator · Stream Worker 독립 배포
+# 사용: docker compose -f docker/docker-compose.streaming.yml up -d
+# API만: docker compose -f docker/docker-compose.streaming.yml up -d api
+# 워커만: docker compose -f docker/docker-compose.streaming.yml up -d stream-worker
+services:
+  api:
+    build:
+      context: ..
+      dockerfile: docker/api.Dockerfile
+    image: streaming-api:latest
+    container_name: streaming-api
+    ports:
+      - "8000:8000"
+    env_file: ../.env
+    environment:
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - TZ=Asia/Seoul
+    depends_on:
+      - kafka
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    volumes:
+      - ../app:/app/app:ro
+
+  orchestrator:
+    build:
+      context: ..
+      dockerfile: docker/orchestrator.Dockerfile
+    image: streaming-orchestrator:latest
+    container_name: streaming-orchestrator
+    env_file: ../.env
+    environment:
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - TZ=Asia/Seoul
+    depends_on:
+      - kafka
+    volumes:
+      - ../app:/app/app:ro
+
+  stream-worker:
+    build:
+      context: ..
+      dockerfile: docker/worker-stream.Dockerfile
+    image: streaming-worker-stream:latest
+    container_name: streaming-stream-worker
+    env_file: ../.env
+    environment:
+      - WORKER_ID=stream-worker-1
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - TZ=Asia/Seoul
+    depends_on:
+      - kafka
+    volumes:
+      - ../app:/app/app:ro
+
+  infer-worker:
+    build:
+      context: ..
+      dockerfile: docker/worker-infer.Dockerfile
+    image: streaming-worker-infer:latest
+    container_name: streaming-infer-worker
+    env_file: ../.env
+    environment:
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - TZ=Asia/Seoul
+    depends_on:
+      - kafka
+    volumes:
+      - ../app:/app/app:ro
+
+  kafka:
+    image: apache/kafka:latest
+    container_name: streaming-kafka
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      # 바인딩: 모든 인터페이스(다른 컨테이너 접속용). 광고 주소: Docker 네트워크에서 kafka:9092로 접속
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0

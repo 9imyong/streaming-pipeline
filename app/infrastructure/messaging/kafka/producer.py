@@ -33,7 +33,6 @@ class KafkaProducerWrapper:
                 bootstrap_servers=self._bootstrap,
                 value_serializer=lambda v: json.dumps(v, ensure_ascii=False).encode("utf-8"),
                 acks="all",
-                retries=3,
             )
             await self._producer.start()
             logger.info("Kafka producer started bootstrap=%s", self._bootstrap)
