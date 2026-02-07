@@ -1,0 +1,7 @@
+# Orchestrator 전용. PyGObject/GStreamer 미포함 (stream-worker만 사용).
+python-dotenv>=0.20.0
+pydantic-settings
+pymysql
+cryptography
+aiokafka
+prometheus-client>=0.19
