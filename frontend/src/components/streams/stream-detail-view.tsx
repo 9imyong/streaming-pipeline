@@ -1,18 +1,35 @@
 "use client";
 
+import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 import { fetchStream, streamStart, streamStop } from "@/lib/api";
+import { ApiError } from "@/lib/api/client";
 import { streamDetailQueryOptions } from "@/lib/query/query-client";
 import type { Stream } from "@/lib/api/types";
 import { StreamStatusBadge } from "./stream-status-badge";
+import { StreamPlayer } from "./stream-player";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EventsTable } from "@/components/events/events-table";
 
+type CommandKind = "start" | "stop" | "retry" | null;
+
+function commandErrorMessage(e: unknown): string {
+  if (e instanceof ApiError) {
+    if (e.status === 409) return "Stream is already in that state (RUNNING/STOPPED).";
+    if (e.status === 404) return "Stream not found.";
+    if (e.status >= 500) return "Server error. Try again later.";
+    return e.message || "Request failed";
+  }
+  return e instanceof Error ? e.message : "Request failed";
+}
+
 export function StreamDetailView({ streamId }: { streamId: string }) {
   const queryClient = useQueryClient();
+  const [commandLoading, setCommandLoading] = useState<CommandKind>(null);
   const { data: stream, isLoading, error, refetch } = useQuery({
     ...streamDetailQueryOptions(streamId),
     queryFn: () => fetchStream(streamId),
@@ -21,6 +38,7 @@ export function StreamDetailView({ streamId }: { streamId: string }) {
   async function handleStart() {
     const source_rtsp =
       stream?.pipeline_params?.source_rtsp?.trim() || "rtsp://example/stream";
+    setCommandLoading("start");
     try {
       await streamStart({
         channel_id: streamId,
@@ -29,28 +47,33 @@ export function StreamDetailView({ streamId }: { streamId: string }) {
       });
       await queryClient.invalidateQueries({ queryKey: ["streams", streamId] });
       await queryClient.invalidateQueries({ queryKey: ["streams"] });
-      toast.success(`Stream ${streamId} start requested`);
+      toast.success("Command accepted. State will update shortly.");
     } catch (e) {
-      const msg = e instanceof Error ? e.message : "Start failed";
-      toast.error(msg);
+      toast.error(commandErrorMessage(e));
+    } finally {
+      setCommandLoading(null);
     }
   }
 
   async function handleStop() {
+    if (!window.confirm(`Stop stream "${streamId}"?`)) return;
+    setCommandLoading("stop");
     try {
       await streamStop(streamId);
       await queryClient.invalidateQueries({ queryKey: ["streams", streamId] });
       await queryClient.invalidateQueries({ queryKey: ["streams"] });
-      toast.success(`Stream ${streamId} stop requested`);
+      toast.success("Command accepted. State will update shortly.");
     } catch (e) {
-      const msg = e instanceof Error ? e.message : "Stop failed";
-      toast.error(msg);
+      toast.error(commandErrorMessage(e));
+    } finally {
+      setCommandLoading(null);
     }
   }
 
   async function handleRetry() {
     const source_rtsp =
       stream?.pipeline_params?.source_rtsp?.trim() || "rtsp://example/stream";
+    setCommandLoading("retry");
     try {
       await streamStart({
         channel_id: streamId,
@@ -59,12 +82,15 @@ export function StreamDetailView({ streamId }: { streamId: string }) {
       });
       await queryClient.invalidateQueries({ queryKey: ["streams", streamId] });
       await queryClient.invalidateQueries({ queryKey: ["streams"] });
-      toast.success(`Stream ${streamId} retry requested`);
+      toast.success("Command accepted. State will update shortly.");
     } catch (e) {
-      const msg = e instanceof Error ? e.message : "Retry failed";
-      toast.error(msg);
+      toast.error(commandErrorMessage(e));
+    } finally {
+      setCommandLoading(null);
     }
   }
+
+  const anyCommandLoading = commandLoading !== null;
 
   if (error) {
     return (
@@ -113,15 +139,42 @@ export function StreamDetailView({ streamId }: { streamId: string }) {
           <StreamStatusBadge status={stream.status} className="mt-2" />
         </div>
         <div className="flex gap-2">
-          {canStart && <Button onClick={handleStart}>Start</Button>}
+          {canStart && (
+            <Button
+              onClick={handleStart}
+              disabled={anyCommandLoading}
+            >
+              {commandLoading === "start" ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                "Start"
+              )}
+            </Button>
+          )}
           {isRunning && (
-            <Button variant="destructive" onClick={handleStop}>
-              Stop
+            <Button
+              variant="destructive"
+              onClick={handleStop}
+              disabled={anyCommandLoading}
+            >
+              {commandLoading === "stop" ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                "Stop"
+              )}
             </Button>
           )}
           {isFailed && (
-            <Button variant="secondary" onClick={handleRetry}>
-              Retry
+            <Button
+              variant="secondary"
+              onClick={handleRetry}
+              disabled={anyCommandLoading}
+            >
+              {commandLoading === "retry" ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                "Retry"
+              )}
             </Button>
           )}
         </div>
@@ -163,6 +216,15 @@ export function StreamDetailView({ streamId }: { streamId: string }) {
           Set pipeline_params.source_rtsp via API PATCH to enable Start.
         </p>
       )}
+
+      <Card>
+        <CardHeader>
+          <CardTitle>HLS Preview</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <StreamPlayer streamId={streamId} playPrompt="Click to play" />
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
