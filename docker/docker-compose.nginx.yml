@@ -1,0 +1,26 @@
+# nginx 리버스 프록시: HLS는 디스크 직접 서빙, API는 FastAPI로 프록시.
+# 사용: docker compose -f docker/docker-compose.yml -f docker/docker-compose.nginx.yml up -d
+# 접속: API·HLS → http://localhost (80), Streamlit UI → http://localhost:8501 (m3u8은 nginx에서 로드)
+
+services:
+  nginx:
+    image: nginx:alpine
+    container_name: streaming-nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - hls_data:/data/hls:ro
+    depends_on:
+      api: { condition: service_healthy }
+    restart: unless-stopped
+
+  # Streamlit에서 HLS 플레이어가 m3u8을 nginx(80)에서 받도록 설정 (브라우저가 요청)
+  ui:
+    environment:
+      - API_BASE_URL=http://api:8000
+      - HLS_BASE_URL=http://localhost/hls
+
+  # nginx 사용 시 외부에 api:8000 노출 제거하려면 아래처럼 포트 비공개 가능 (선택)
+  # api:
+  #   ports: []
