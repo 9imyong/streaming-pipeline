@@ -229,11 +229,13 @@ def _build_rtsp_pipeline(spec: StreamSpec, tail_desc: str):
         os.makedirs(out_dir, exist_ok=True)
         segment_tpl = f"{out_dir}/segment_%05d.ts"
         playlist_path = f"{out_dir}/index.m3u8"
+        target_dur = max(2, min(10, int(params.get("hls_target_duration_sec") or 4)))
+        playlist_len = max(3, min(20, int(params.get("hls_playlist_length") or 6)))
         hlssink2 = Gst.ElementFactory.make("hlssink2", "hlssink2")
         if not hlssink2:
             return None
-        hlssink2.set_property("target-duration", 2)
-        hlssink2.set_property("playlist-length", 3)
+        hlssink2.set_property("target-duration", target_dur)
+        hlssink2.set_property("playlist-length", playlist_len)
         hlssink2.set_property("location", segment_tpl)
         hlssink2.set_property("playlist-location", playlist_path)
         pipeline.add(hlssink2)
@@ -276,20 +278,32 @@ def _build_rtsp_pipeline(spec: StreamSpec, tail_desc: str):
         else:
             depay = Gst.ElementFactory.make("rtph264depay", None)
             parse_el = Gst.ElementFactory.make("h264parse", None)
+        # H.264: 매 IDR마다 SPS/PPS 삽입 → 세그먼트 경계에서 디코더가 독립 디코딩 가능 (멈춤 완화)
+        if parse_el and encoding not in ("H265", "HEVC"):
+            try:
+                parse_el.set_property("config-interval", -1)
+            except Exception:
+                pass
+        queue2 = Gst.ElementFactory.make("queue", None) if output_type == "hls" else None
         if not queue_el or not depay or not parse_el:
             return
         for el in (queue_el, depay, parse_el):
             pipeline.add(el)
+        if queue2:
+            pipeline.add(queue2)
         queue_el.link(depay)
         depay.link(parse_el)
+        if queue2:
+            parse_el.link(queue2)
         sink_pad = sink_pad_getter()
         if not sink_pad:
             return
         if pad.link(queue_el.get_static_pad("sink")) != Gst.PadLinkReturn.OK:
             return
-        if parse_el.get_static_pad("src").link(sink_pad) != Gst.PadLinkReturn.OK:
+        tail_src = queue2.get_static_pad("src") if queue2 else parse_el.get_static_pad("src")
+        if tail_src.link(sink_pad) != Gst.PadLinkReturn.OK:
             return
-        for el in (queue_el, depay, parse_el):
+        for el in (queue_el, depay, parse_el) + ((queue2,) if queue2 else ()):
             el.sync_state_with_parent()
 
     rtspsrc.connect("pad-added", _on_rtsp_pad_added)
@@ -358,11 +372,13 @@ def _build_rtmp_pipeline(spec: StreamSpec, tail_desc: str):
             return None
         pipeline.add(tail_bin)
         _add_ghost_pads(tail_bin, has_output=True)
+        target_dur = max(2, min(10, int(params.get("hls_target_duration_sec") or 4)))
+        playlist_len = max(3, min(20, int(params.get("hls_playlist_length") or 6)))
         hlssink2 = Gst.ElementFactory.make("hlssink2", "hlssink2")
         if not hlssink2:
             return None
-        hlssink2.set_property("target-duration", 2)
-        hlssink2.set_property("playlist-length", 3)
+        hlssink2.set_property("target-duration", target_dur)
+        hlssink2.set_property("playlist-length", playlist_len)
         hlssink2.set_property("location", segment_tpl)
         hlssink2.set_property("playlist-location", playlist_path)
         pipeline.add(hlssink2)
