@@ -62,6 +62,7 @@ ALLOWED_TRANSITIONS: Set[Tuple[StreamState, StreamState]] = {
     (StreamState.RUNNING, StreamState.FAILED),
     (StreamState.RUNNING, StreamState.RUNNING),  # heartbeat 갱신
     (StreamState.FAILED, StreamState.PENDING),
+    (StreamState.FAILED, StreamState.ASSIGNED),  # lease 만료 후 재할당
     (StreamState.FAILED, StreamState.STOPPED),
     (StreamState.FAILED, StreamState.FAILED),
     (StreamState.STOPPED, StreamState.PENDING),

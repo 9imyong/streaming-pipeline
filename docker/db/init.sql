@@ -1,6 +1,5 @@
--- streams: 스트림 상태 + lease (API/Orchestrator/Worker 공통)
--- jobs: 멱등성 (API)
--- MySQL 5.7+ / 8.0. 실행: mysql -u root -p streaming_pipeline_dev < 001_streams_jobs_mysql.sql
+-- MySQL 컨테이너 최초 기동 시 /docker-entrypoint-initdb.d 에 마운트하여 DB 초기화.
+-- 수동 실행: docker exec -i streaming-mysql mysql -uroot -pdevpass streaming_pipeline_dev < docker/db/init.sql
 
 CREATE TABLE IF NOT EXISTS streams (
   channel_id         VARCHAR(64) PRIMARY KEY,

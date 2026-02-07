@@ -61,9 +61,15 @@ services:
     environment:
       - WORKER_ID=stream-worker-1
       - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - HOST=mysql
+      - PORT=3306
+      - USERNAME=root
+      - PASSWORD=devpass
+      - DBNAME=streaming_pipeline_dev
       - TZ=Asia/Seoul
     depends_on:
-      - kafka
+      kafka: { condition: service_started }
+      mysql: { condition: service_healthy }
     volumes:
       - ../app:/app/app:ro
 
@@ -90,6 +96,8 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: devpass
       MYSQL_DATABASE: streaming_pipeline_dev
+    volumes:
+      - ./db/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-pdevpass"]
       interval: 5s
