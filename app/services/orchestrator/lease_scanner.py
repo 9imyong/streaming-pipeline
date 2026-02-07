@@ -14,6 +14,10 @@ from app.domain.stream_state_machine import DesiredState, StreamState, validate_
 from app.infrastructure.messaging.kafka.schemas import command_payload
 from app.infrastructure.messaging.kafka.topics import STREAM_COMMANDS
 from app.infrastructure.logging.stream_extra import stream_log_extra
+from app.infrastructure.observability.stream_metrics import (
+    streams_failed_total_counter,
+    streams_reassign_total_counter,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -99,6 +103,7 @@ async def run_lease_expiry_scanner(
                 ok = await stream_repo.transition_status(channel_id, current, StreamState.FAILED.value)
                 if not ok:
                     continue
+                streams_failed_total_counter.inc()
                 last_reassign[channel_id] = now
                 job_id = f"reassign-{channel_id}-{_short_id()}"
                 payload = command_payload(
@@ -109,6 +114,7 @@ async def run_lease_expiry_scanner(
                     params=row.get("pipeline_params") or {},
                 )
                 await producer.send(STREAM_COMMANDS, channel_id, payload)
+                streams_reassign_total_counter.inc()
                 logger.info(
                     "lease expired reassign channel_id=%s restart_count=%s",
                     channel_id,

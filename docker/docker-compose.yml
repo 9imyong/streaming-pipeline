@@ -36,6 +36,8 @@ services:
       dockerfile: docker/orchestrator.Dockerfile
     image: streaming-orchestrator:latest
     container_name: streaming-orchestrator
+    ports:
+      - "9090:9090"
     env_file: ../.env
     environment:
       - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
@@ -57,6 +59,8 @@ services:
       dockerfile: docker/worker-stream.Dockerfile
     image: streaming-worker-stream:latest
     container_name: streaming-stream-worker
+    ports:
+      - "9091:9091"
     env_file: ../.env
     environment:
       - WORKER_ID=stream-worker-1

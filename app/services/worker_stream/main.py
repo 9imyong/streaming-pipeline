@@ -1,5 +1,6 @@
 """
 Stream Worker 진입점. stream.commands 소비 → lease 확인 후 채널당 subprocess 실행.
+- Prometheus /metrics (port 9091).
 """
 import asyncio
 import logging
@@ -14,6 +15,8 @@ if str(_root) not in sys.path:
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+METRICS_PORT = 9091
+
 
 async def _command_iterator(consumer):
     """Kafka 메시지를 command dict 스트림으로 변환."""
@@ -23,6 +26,7 @@ async def _command_iterator(consumer):
 
 
 async def run() -> None:
+    from app.core.observability import start_metrics_server
     from app.infrastructure.messaging.kafka.consumer import KafkaConsumerBase
     from app.infrastructure.messaging.kafka.producer import KafkaProducerWrapper
     from app.infrastructure.messaging.kafka.topics import STREAM_COMMANDS
@@ -32,6 +36,7 @@ async def run() -> None:
     from app.services.worker_stream.manager import StreamProcessManager
     from app.infrastructure.runners.gstreamer import GstreamerStreamRunner
 
+    start_metrics_server(METRICS_PORT)
     worker_id = os.environ.get("WORKER_ID") or os.environ.get("HOSTNAME", "worker-1")
     producer = KafkaProducerWrapper()
     await producer.start()
@@ -57,7 +62,7 @@ async def run() -> None:
 
 
 def main() -> None:
-    logger.info("Stream Worker starting")
+    logger.info("Stream Worker starting metrics_port=%s", METRICS_PORT)
     try:
         asyncio.run(run())
     except KeyboardInterrupt:

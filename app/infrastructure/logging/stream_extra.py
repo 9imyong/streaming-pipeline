@@ -1,5 +1,5 @@
 """
-구조화 로그 필드 통일: channel_id, worker_id, event_type, restart_count.
+구조화 로그 필드 통일: channel_id, worker_id, event_type, command_id, restart_count.
 - Worker/Orchestrator에서 logger.info(..., extra=stream_log_extra(...)) 사용 시
   "어디서/왜/몇 번 재시작" 검색·대시보드 가능.
 """
@@ -10,6 +10,7 @@ def stream_log_extra(
     channel_id: str,
     worker_id: Optional[str] = None,
     event_type: Optional[str] = None,
+    command_id: Optional[str] = None,
     restart_count: Optional[int] = None,
     **kwargs: Any,
 ) -> dict[str, Any]:
@@ -19,6 +20,8 @@ def stream_log_extra(
         out["worker_id"] = worker_id
     if event_type is not None:
         out["event_type"] = event_type
+    if command_id is not None:
+        out["command_id"] = command_id
     if restart_count is not None:
         out["restart_count"] = restart_count
     out.update(kwargs)

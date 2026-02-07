@@ -22,6 +22,7 @@ from app.infrastructure.messaging.kafka.schemas import stream_event_payload
 from app.infrastructure.messaging.kafka.topics import STREAM_EVENTS
 from app.services.worker_stream.backoff import next_delay, should_stop_restarting
 from app.infrastructure.logging.stream_extra import stream_log_extra
+from app.infrastructure.observability.stream_metrics import worker_restarts_total_counter
 
 logger = logging.getLogger(__name__)
 
@@ -152,7 +153,9 @@ class StreamProcessManager:
                 await self.stop_stream(cmd.get("channel_id") or "", reason="command_stop")
 
     def _parse_spec(self, cmd: dict) -> StreamSpec:
-        params = cmd.get("params") or {}
+        params = dict(cmd.get("params") or {})
+        if cmd.get("command_id") is not None:
+            params["command_id"] = cmd.get("command_id")
         return StreamSpec(
             channel_id=cmd.get("channel_id", ""),
             source_uri=params.get("source_rtsp", ""),
@@ -174,7 +177,13 @@ class StreamProcessManager:
                 "spawn failed channel_id=%s: %s",
                 spec.channel_id,
                 e,
-                extra=stream_log_extra(spec.channel_id, self.worker_id, "FAILED", 0),
+                extra=stream_log_extra(
+                    spec.channel_id,
+                    self.worker_id,
+                    "FAILED",
+                    command_id=spec.params.get("command_id"),
+                    restart_count=0,
+                ),
             )
             await self.stream_repo.set_last_error(spec.channel_id, str(e))
             await self.event_publisher.stream_event("FAILED", spec.channel_id, self.worker_id, message=str(e))
@@ -275,7 +284,13 @@ class StreamProcessManager:
                     logger.info(
                         "channel_id=%s pipeline exited normally exit_code=0",
                         channel_id,
-                        extra=stream_log_extra(channel_id, self.worker_id, "STOPPED", handle.restart_count),
+                        extra=stream_log_extra(
+                            channel_id,
+                            self.worker_id,
+                            "STOPPED",
+                            command_id=handle.spec.params.get("command_id"),
+                            restart_count=handle.restart_count,
+                        ),
                     )
                     continue
 
@@ -295,10 +310,18 @@ class StreamProcessManager:
                     channel_id,
                     proc.returncode,
                     handle.restart_count + 1,
-                    extra=stream_log_extra(channel_id, self.worker_id, "FAILED", handle.restart_count + 1, exit_code=proc.returncode),
+                    extra=stream_log_extra(
+                        channel_id,
+                        self.worker_id,
+                        "FAILED",
+                        command_id=handle.spec.params.get("command_id"),
+                        restart_count=handle.restart_count + 1,
+                        exit_code=proc.returncode,
+                    ),
                 )
 
                 handle.restart_count += 1
+                worker_restarts_total_counter.inc()
                 await self.stream_repo.increment_restart_count(channel_id)
                 if should_stop_restarting(handle.restart_count, self.max_restarts):
                     await self.stream_repo.set_last_error(
@@ -312,7 +335,13 @@ class StreamProcessManager:
                         "max_restarts exceeded channel_id=%s restart_count=%s",
                         channel_id,
                         handle.restart_count,
-                        extra=stream_log_extra(channel_id, self.worker_id, "FAILED", handle.restart_count),
+                        extra=stream_log_extra(
+                            channel_id,
+                            self.worker_id,
+                            "FAILED",
+                            command_id=handle.spec.params.get("command_id"),
+                            restart_count=handle.restart_count,
+                        ),
                     )
                     await self.stop_stream(channel_id, reason="max_restart_exceeded")
                     continue
@@ -322,7 +351,13 @@ class StreamProcessManager:
                     channel_id,
                     handle.restart_count,
                     delay,
-                    extra=stream_log_extra(channel_id, self.worker_id, "restart", handle.restart_count),
+                    extra=stream_log_extra(
+                        channel_id,
+                        self.worker_id,
+                        "restart",
+                        command_id=handle.spec.params.get("command_id"),
+                        restart_count=handle.restart_count,
+                    ),
                 )
                 await asyncio.sleep(delay)
                 row = await self.stream_repo.get(channel_id)
