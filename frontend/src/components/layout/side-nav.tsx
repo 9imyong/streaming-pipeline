@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { getRole, canEditSettings } from "@/lib/storage/settings";
 import {
   LayoutDashboard,
+  Video,
   Radio,
   Briefcase,
   Cpu,
@@ -17,6 +18,7 @@ import {
 
 const allNavItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/sources", label: "Sources", icon: Video },
   { href: "/streams", label: "Streams", icon: Radio },
   { href: "/jobs", label: "Jobs", icon: Briefcase },
   { href: "/workers", label: "Workers", icon: Cpu },
