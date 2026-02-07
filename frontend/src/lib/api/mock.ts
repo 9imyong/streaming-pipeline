@@ -1,4 +1,8 @@
+import { ApiError } from "./client";
 import type {
+  Source,
+  SourceCreateBody,
+  SourcePatchBody,
   Stream,
   StreamListItem,
   Job,
@@ -6,6 +10,31 @@ import type {
   StreamEvent,
   MetricsSummary,
 } from "./types";
+
+export const mockSources: Source[] = [
+  {
+    source_id: "src-01",
+    name: "입구 카메라",
+    rtsp_url: "rtsp://210.99.70.120:1935/live/cctv001.stream",
+    enabled: true,
+    location: "천안 동서 타워",
+    updated_at: new Date().toISOString(),
+  },
+  {
+    source_id: "src-02",
+    name: "주차장 A",
+    rtsp_url: "rtsp://210.99.70.120:1935/live/cctv002.stream",
+    enabled: true,
+    updated_at: new Date().toISOString(),
+  },
+  {
+    source_id: "src-03",
+    name: "비활성 카메라",
+    rtsp_url: "rtsp://210.99.70.120:1935/live/cctv003.stream",
+    enabled: false,
+    updated_at: new Date(Date.now() - 86400_000).toISOString(),
+  },
+];
 
 export const mockStreamList: StreamListItem[] = [
   {
@@ -233,4 +262,97 @@ export async function mockFetchEvents(params?: {
 export async function mockFetchMetricsSummary(): Promise<MetricsSummary> {
   await delay(200);
   return { ...mockMetricsSummary };
+}
+
+// Sources: mutable list for create/update mock
+let mockSourcesData: Source[] = [...mockSources];
+
+export async function mockFetchSources(params?: {
+  enabled?: boolean;
+  q?: string;
+  limit?: number;
+  offset?: number;
+}): Promise<Source[]> {
+  await delay(300);
+  let list = [...mockSourcesData];
+  if (params?.enabled !== undefined) {
+    list = list.filter((s) => s.enabled === params.enabled);
+  }
+  if (params?.q?.trim()) {
+    const q = params.q.toLowerCase().trim();
+    list = list.filter(
+      (s) =>
+        s.name.toLowerCase().includes(q) ||
+        s.rtsp_url.toLowerCase().includes(q)
+    );
+  }
+  const offset = params?.offset ?? 0;
+  const limit = params?.limit ?? 100;
+  return list.slice(offset, offset + limit);
+}
+
+export async function mockFetchSource(id: string): Promise<Source | null> {
+  await delay(200);
+  return mockSourcesData.find((s) => s.source_id === id) ?? null;
+}
+
+export async function mockCreateSource(
+  body: SourceCreateBody
+): Promise<Source> {
+  await delay(400);
+  const existing = mockSourcesData.find(
+    (s) => s.rtsp_url === body.rtsp_url.trim()
+  );
+  if (existing) {
+    throw new ApiError("Source with same rtsp_url already exists", 409);
+  }
+  const source: Source = {
+    source_id: `src-${Date.now()}`,
+    name: body.name.trim(),
+    rtsp_url: body.rtsp_url.trim(),
+    enabled: body.enabled ?? true,
+    location: body.location?.trim() || null,
+    description: body.description?.trim() || null,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  };
+  mockSourcesData.push(source);
+  return source;
+}
+
+export async function mockUpdateSource(
+  id: string,
+  body: SourcePatchBody
+): Promise<Source> {
+  await delay(300);
+  const idx = mockSourcesData.findIndex((s) => s.source_id === id);
+  if (idx === -1) {
+    throw new ApiError("Source not found", 404);
+  }
+  const cur = mockSourcesData[idx];
+  mockSourcesData[idx] = {
+    ...cur,
+    ...(body.name !== undefined && { name: body.name }),
+    ...(body.rtsp_url !== undefined && { rtsp_url: body.rtsp_url }),
+    ...(body.location !== undefined && { location: body.location }),
+    ...(body.description !== undefined && { description: body.description }),
+    ...(body.enabled !== undefined && { enabled: body.enabled }),
+    updated_at: new Date().toISOString(),
+  };
+  return mockSourcesData[idx];
+}
+
+export async function mockValidateSource(id: string): Promise<{ ok: boolean; message?: string }> {
+  await delay(500);
+  const s = mockSourcesData.find((x) => x.source_id === id);
+  if (!s) return { ok: false, message: "Source not found" };
+  return { ok: true };
+}
+
+export async function mockCreateStreamFromSource(
+  _sourceId: string,
+  _body: { mode: "start" | "create_only"; profile?: "main" | "low" }
+): Promise<{ stream_id?: string }> {
+  await delay(400);
+  return { stream_id: `ch-${Date.now()}` };
 }

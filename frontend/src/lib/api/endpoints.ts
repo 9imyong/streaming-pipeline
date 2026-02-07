@@ -5,6 +5,27 @@
 const PREFIX = "/v1";
 
 export const endpoints = {
+  /** Sources (CCTV) */
+  sources: (params?: {
+    enabled?: boolean;
+    q?: string;
+    limit?: number;
+    offset?: number;
+  }) => {
+    const search = new URLSearchParams();
+    if (params?.enabled !== undefined)
+      search.set("enabled", String(params.enabled));
+    if (params?.q) search.set("q", params.q);
+    if (params?.limit != null) search.set("limit", String(params.limit));
+    if (params?.offset != null) search.set("offset", String(params.offset));
+    const q = search.toString();
+    return `${PREFIX}/sources${q ? `?${q}` : ""}`;
+  },
+  source: (id: string) => `${PREFIX}/sources/${id}`,
+  sourceValidate: (id: string) => `${PREFIX}/sources/${id}/validate`,
+  /** POST /v1/sources/:id/streams — Source 기반 Stream 생성/시작 */
+  sourceStreams: (sourceId: string) => `${PREFIX}/sources/${sourceId}/streams`,
+
   /** 목록: limit/offset 서버 페이지네이션 가정 */
   streams: (params?: { limit?: number; offset?: number }) => {
     const search = new URLSearchParams();

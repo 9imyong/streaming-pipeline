@@ -12,6 +12,42 @@ export type JobStatus = "PENDING" | "PROCESSING" | "DONE" | "FAILED";
 
 export type WorkerStatus = "IDLE" | "BUSY" | "DOWN";
 
+/** Source(CCTV) — GET /v1/sources, GET /v1/sources/:id */
+export interface Source {
+  source_id: string;
+  name: string;
+  rtsp_url: string;
+  enabled: boolean;
+  location?: string | null;
+  description?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+}
+
+/** Source 생성 요청 (POST /v1/sources) */
+export interface SourceCreateBody {
+  name: string;
+  rtsp_url: string;
+  location?: string;
+  description?: string;
+  enabled?: boolean;
+}
+
+/** Source 부분 수정 (PATCH /v1/sources/:id) */
+export interface SourcePatchBody {
+  name?: string;
+  rtsp_url?: string;
+  location?: string;
+  description?: string;
+  enabled?: boolean;
+}
+
+/** Source 기반 Stream 생성 (POST /v1/sources/:id/streams) */
+export interface CreateStreamFromSourceBody {
+  mode: "start" | "create_only";
+  profile?: "main" | "low";
+}
+
 /** 목록 항목 (GET /v1/streams) */
 export interface StreamListItem {
   channel_id: string;

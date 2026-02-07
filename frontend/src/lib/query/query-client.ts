@@ -29,6 +29,22 @@ export const queryClient = new QueryClient({
   },
 });
 
+/** sources: enabled, q, limit, offset */
+export const sourcesQueryOptions = (params?: {
+  enabled?: boolean;
+  q?: string;
+  limit?: number;
+  offset?: number;
+}) => ({
+  queryKey: ["sources", params] as const,
+  refetchInterval: () => Math.max(getRefetchIntervalMs() * 3, 10000),
+});
+
+export const sourceDetailQueryOptions = (id: string) => ({
+  queryKey: ["sources", id] as const,
+  refetchInterval: () => Math.max(getRefetchIntervalMs() * 2, 5000),
+});
+
 /** streams: limit/offset 파라미터 지원, 동일 queryKey로 중복 폴링 방지 */
 export const streamListQueryOptions = (params?: {
   limit?: number;
