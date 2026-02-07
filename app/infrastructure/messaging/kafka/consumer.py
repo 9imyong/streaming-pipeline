@@ -3,6 +3,7 @@ Kafka Consumer 기본 클래스.
 - group_id로 소비 그룹. partition key=channel_id 기준 토픽 구독.
 - at-least-once: 처리 후 commit. application/domain에서는 사용 금지.
 """
+import asyncio
 import json
 import logging
 from typing import Any, AsyncIterator, Callable, Awaitable
@@ -10,6 +11,9 @@ from typing import Any, AsyncIterator, Callable, Awaitable
 from app.core.config import get_settings
 
 logger = logging.getLogger(__name__)
+
+KAFKA_CONNECT_RETRIES = 15
+KAFKA_CONNECT_SLEEP_SEC = 2
 
 
 class KafkaConsumerBase:
@@ -30,15 +34,34 @@ class KafkaConsumerBase:
     async def start(self, topics: list[str]) -> None:
         try:
             from aiokafka import AIOKafkaConsumer
-            self._consumer = AIOKafkaConsumer(
-                *topics,
-                bootstrap_servers=self._bootstrap,
-                group_id=self._group_id,
-                value_deserializer=lambda v: json.loads(v.decode("utf-8")) if v else {},
-                auto_offset_reset="earliest",
-            )
-            await self._consumer.start()
-            logger.info("Kafka consumer started group_id=%s topics=%s", self._group_id, topics)
+            last_exc = None
+            for attempt in range(1, KAFKA_CONNECT_RETRIES + 1):
+                c = AIOKafkaConsumer(
+                    *topics,
+                    bootstrap_servers=self._bootstrap,
+                    group_id=self._group_id,
+                    value_deserializer=lambda v: json.loads(v.decode("utf-8")) if v else {},
+                    auto_offset_reset="earliest",
+                )
+                try:
+                    await c.start()
+                    self._consumer = c
+                    logger.info("Kafka consumer started group_id=%s topics=%s", self._group_id, topics)
+                    return
+                except Exception as e:
+                    last_exc = e
+                    try:
+                        await c.stop()
+                    except Exception:
+                        pass
+                    if attempt < KAFKA_CONNECT_RETRIES:
+                        logger.warning(
+                            "Kafka consumer connect attempt %s/%s failed: %s, retrying in %ss",
+                            attempt, KAFKA_CONNECT_RETRIES, e, KAFKA_CONNECT_SLEEP_SEC,
+                        )
+                        await asyncio.sleep(KAFKA_CONNECT_SLEEP_SEC)
+            logger.error("Kafka consumer connect failed after %s attempts: %s", KAFKA_CONNECT_RETRIES, last_exc)
+            raise last_exc
         except ImportError:
             logger.warning("aiokafka not installed, consumer no-op")
             self._consumer = None

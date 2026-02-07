@@ -4,6 +4,7 @@
 - at-least-once: acks=all, retries 설정.
 - application/domain에서는 사용 금지. CommandBus/EventBus 구현체에서만 사용.
 """
+import asyncio
 import json
 import logging
 from typing import Any
@@ -13,6 +14,9 @@ from app.infrastructure.messaging.kafka.schemas import with_schema_version
 from app.infrastructure.messaging.kafka.topics import AI_EVENTS, STREAM_COMMANDS, STREAM_EVENTS
 
 logger = logging.getLogger(__name__)
+
+KAFKA_CONNECT_RETRIES = 15
+KAFKA_CONNECT_SLEEP_SEC = 2
 
 
 class KafkaProducerWrapper:
@@ -26,16 +30,35 @@ class KafkaProducerWrapper:
         self._producer: Any = None
 
     async def start(self) -> None:
-        """Producer 생성. aiokafka 사용 시 비동기 시작."""
+        """Producer 생성. aiokafka 사용 시 비동기 시작. 연결 실패 시 재시도(브로커 준비 대기)."""
         try:
             from aiokafka import AIOKafkaProducer
-            self._producer = AIOKafkaProducer(
-                bootstrap_servers=self._bootstrap,
-                value_serializer=lambda v: json.dumps(v, ensure_ascii=False).encode("utf-8"),
-                acks="all",
-            )
-            await self._producer.start()
-            logger.info("Kafka producer started bootstrap=%s", self._bootstrap)
+            last_exc = None
+            for attempt in range(1, KAFKA_CONNECT_RETRIES + 1):
+                p = AIOKafkaProducer(
+                    bootstrap_servers=self._bootstrap,
+                    value_serializer=lambda v: json.dumps(v, ensure_ascii=False).encode("utf-8"),
+                    acks="all",
+                )
+                try:
+                    await p.start()
+                    self._producer = p
+                    logger.info("Kafka producer started bootstrap=%s", self._bootstrap)
+                    return
+                except Exception as e:
+                    last_exc = e
+                    try:
+                        await p.stop()
+                    except Exception:
+                        pass
+                    if attempt < KAFKA_CONNECT_RETRIES:
+                        logger.warning(
+                            "Kafka producer connect attempt %s/%s failed: %s, retrying in %ss",
+                            attempt, KAFKA_CONNECT_RETRIES, e, KAFKA_CONNECT_SLEEP_SEC,
+                        )
+                        await asyncio.sleep(KAFKA_CONNECT_SLEEP_SEC)
+            logger.error("Kafka producer connect failed after %s attempts: %s", KAFKA_CONNECT_RETRIES, last_exc)
+            raise last_exc
         except ImportError:
             logger.warning("aiokafka not installed, producer no-op")
             self._producer = None
