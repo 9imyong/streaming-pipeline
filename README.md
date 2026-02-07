@@ -159,15 +159,22 @@ docker compose -f docker/docker-compose.yml up -d
 
 ### 8.1 스모크 테스트 (START/STOP → Kafka → Orchestrator)
 
-1. **MySQL 기동 후 DB 초기화** (최초 1회):  
-   먼저 `docker compose -f docker/docker-compose.yml up -d mysql` 로 MySQL 컨테이너(streaming-mysql)를 띄운 뒤, healthcheck 통과 후:  
+1. **스택 기동**  
+   `docker compose -f docker/docker-compose.yml up -d mysql kafka api orchestrator`
+2. **DB 초기화** (최초 1회):  
+   `docker compose -f docker/docker-compose.yml up -d mysql` 후 healthcheck 통과하면:  
    `docker exec -i streaming-mysql mysql -uroot -pdevpass streaming_pipeline_dev < app/infrastructure/persistence/migrations/001_streams_jobs_mysql.sql`
-2. **START**:  
+3. **START curl 예시**  
    `curl -s -X POST http://localhost:8000/v1/streams -H "Content-Type: application/json" -d '{"channel_id":"ch1","source_rtsp":"rtsp://example/stream"}'`  
-   → 202, `job_id` 수신. 기대 로그: API `command_bus.publish key=ch1 command=START`, Orchestrator `handle_start assigned channel_id=ch1 worker_id=...`
-3. **STOP**:  
+   → 202, `job_id` 수신.
+4. **STOP curl 예시**  
    `curl -s -X DELETE http://localhost:8000/v1/streams/ch1`  
-   → 202. 기대 로그: API `command=STOP`, Orchestrator `handle_stop released lease channel_id=ch1`
+   → 202.
+5. **기대 로그 (최소)**  
+   - API: `command_bus.publish command_id=... channel_id=ch1 type=START` (또는 `published START command_id=...`)  
+   - Orchestrator: `handle_start assigned channel_id=ch1 worker_id=...`  
+   - STOP 시: API `type=STOP`, Orchestrator `handle_stop released lease channel_id=ch1`
+6. **한 번에 실행**: `make smoke` (또는 `make smoke-test`) — 전제: compose up mysql kafka api orchestrator 및 DB 초기화 완료.
 
 ### 8.2 DB 검증 쿼리 예시
 

@@ -1,5 +1,5 @@
 # streaming-pipeline Makefile
-.PHONY: dev-up dev-down lint smoke-test
+.PHONY: dev-up dev-down lint smoke smoke-test
 
 dev-up:
 	./scripts/dev_up.sh
@@ -10,5 +10,6 @@ dev-down:
 lint:
 	./scripts/lint.sh
 
-smoke-test:
+# E2E 스모크: POST/DELETE /v1/streams → 202. 전제: compose up mysql kafka api orchestrator + DB 초기화
+smoke smoke-test:
 	./scripts/smoke_test.sh

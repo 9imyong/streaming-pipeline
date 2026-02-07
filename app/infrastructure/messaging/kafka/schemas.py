@@ -19,16 +19,29 @@ def command_payload(
     job_id: str,
     idempotency_key: str,
     params: dict | None = None,
+    command_id: str | None = None,
+    request_id: str | None = None,
+    requested_by: str | None = None,
 ) -> dict:
-    """stream.commands 페이로드. 파티션 키=channel_id."""
-    return with_schema_version({
+    """stream.commands 페이로드. 파티션 키=channel_id. type=START|STOP, command_id·ts 필수."""
+    ts = datetime.now(timezone.utc).isoformat()
+    payload = {
         "command": command,
+        "type": command,
         "channel_id": channel_id,
         "job_id": job_id,
         "idempotency_key": idempotency_key,
         "params": params or {},
-        "created_at": datetime.now(timezone.utc).isoformat(),
-    })
+        "ts": ts,
+        "created_at": ts,
+    }
+    if command_id:
+        payload["command_id"] = command_id
+    if request_id is not None:
+        payload["request_id"] = request_id
+    if requested_by is not None:
+        payload["requested_by"] = requested_by
+    return with_schema_version(payload)
 
 
 def stream_event_payload(

@@ -54,13 +54,16 @@ async def create_stream(
         pipeline_params=params,
     )
     # command 발행 → Orchestrator가 소비해 lease 할당 후 Worker에 지시 (이 레이어는 발행만)
+    command_id = str(uuid.uuid4())
     await command_bus.publish_command(
         key=channel_id,
         payload={
             "command": "START",
+            "type": "START",
             "channel_id": channel_id,
             "job_id": jid,
             "idempotency_key": idem,
+            "command_id": command_id,
             "params": params,
         },
     )

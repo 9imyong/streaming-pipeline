@@ -14,6 +14,7 @@ import time
 from datetime import datetime, timezone
 from typing import Any, AsyncIterator, Dict, Optional
 
+from app.application.dto import StreamSpec
 from app.application.ports.event_bus import EventBus
 from app.application.ports.lease_store import LeaseStore
 from app.application.ports.stream_repository import StreamRepository
@@ -22,17 +23,6 @@ from app.infrastructure.messaging.kafka.topics import STREAM_EVENTS
 from app.services.worker_stream.backoff import next_delay, should_stop_restarting
 
 logger = logging.getLogger(__name__)
-
-
-@dataclasses.dataclass(slots=True)
-class StreamSpec:
-    channel_id: str
-    source_uri: str
-    output_type: str
-    output_uri: Optional[str]
-    ai_profile: Optional[str]
-    params: dict
-    worker_id: str
 
 
 @dataclasses.dataclass(slots=True)
@@ -185,11 +175,13 @@ class StreamProcessManager:
             return
         handle = ProcHandle(spec=spec, process=proc, started_at=time.time())
         self._procs[spec.channel_id] = handle
-        await self.event_publisher.stream_event(
-            "STARTED", spec.channel_id, self.worker_id,
-            job_id=spec.params.get("job_id"),
-            payload={"pid": proc.pid, "output_type": spec.output_type},
-        )
+        # 러너가 bus로 STARTED 발행하면 중복 방지
+        if not getattr(proc, "publishes_lifecycle_events", False):
+            await self.event_publisher.stream_event(
+                "STARTED", spec.channel_id, self.worker_id,
+                job_id=spec.params.get("job_id"),
+                payload={"pid": getattr(proc, "pid", None), "output_type": spec.output_type},
+            )
 
     async def stop_stream(self, channel_id: str, reason: str) -> None:
         handle = self._procs.get(channel_id)
@@ -197,13 +189,13 @@ class StreamProcessManager:
             return
         handle.stopping = True
         proc = handle.process
-        with contextlib.suppress(ProcessLookupError):
+        with contextlib.suppress(ProcessLookupError, AttributeError):
             proc.terminate()
         try:
             await asyncio.wait_for(proc.wait(), timeout=10.0)
         except asyncio.TimeoutError:
-            with contextlib.suppress(ProcessLookupError):
-                proc.kill()
+            with contextlib.suppress(ProcessLookupError, AttributeError):
+                getattr(proc, "kill", proc.terminate)()
             with contextlib.suppress(Exception):
                 await proc.wait()
         with contextlib.suppress(Exception):
@@ -252,33 +244,38 @@ class StreamProcessManager:
                     except (asyncio.TimeoutError, Exception):
                         pass
 
-                # 정상 종료(0): STOPPED 발행, DB 전이, lease 해제, 재시작 없음
+                # 러너가 bus로 이미 STARTED/STOPPED/FAILED 발행한 경우 중복 발행 스킵
+                runner_publishes = getattr(proc, "publishes_lifecycle_events", False)
+
+                # 정상 종료(0): STOPPED 발행(러너가 안 했을 때만), DB 전이, lease 해제
                 if proc.returncode == 0:
                     await self.stream_repo.set_last_error(channel_id, "")
                     row = await self.stream_repo.get(channel_id)
                     current = (row or {}).get("status") or "running"
                     await self.stream_repo.transition_status(channel_id, current, "stopped")
-                    await self.event_publisher.stream_event(
-                        "STOPPED", channel_id, self.worker_id,
-                        message="eos",
-                        payload={"reason": "eos", "exit_code": 0},
-                    )
+                    if not runner_publishes:
+                        await self.event_publisher.stream_event(
+                            "STOPPED", channel_id, self.worker_id,
+                            message="eos",
+                            payload={"reason": "eos", "exit_code": 0},
+                        )
                     with contextlib.suppress(Exception):
                         await self.lease_store.release(channel_id, self.worker_id)
                     self._procs.pop(channel_id, None)
                     logger.info("channel_id=%s pipeline exited normally exit_code=0", channel_id)
                     continue
 
-                # 비정상 종료: FAILED 발행 후 재시작 로직
+                # 비정상 종료: FAILED 발행(러너가 안 했을 때만) 후 재시작 로직
                 err_msg = f"exit_code={proc.returncode}"
                 if stderr_snippet:
                     err_msg += " " + stderr_snippet[:500]
                 await self.stream_repo.set_last_error(channel_id, err_msg)
-                await self.event_publisher.stream_event(
-                    "FAILED", channel_id, self.worker_id,
-                    message=err_msg,
-                    last_error=stderr_snippet[:1024] if stderr_snippet else None,
-                )
+                if not runner_publishes:
+                    await self.event_publisher.stream_event(
+                        "FAILED", channel_id, self.worker_id,
+                        message=err_msg,
+                        last_error=stderr_snippet[:1024] if stderr_snippet else None,
+                    )
 
                 handle.restart_count += 1
                 await self.stream_repo.increment_restart_count(channel_id)
