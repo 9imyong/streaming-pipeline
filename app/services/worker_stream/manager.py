@@ -73,6 +73,7 @@ class StreamEventPublisher:
         job_id: Optional[str] = None,
         message: Optional[str] = None,
         payload: Optional[dict] = None,
+        last_error: Optional[str] = None,
     ) -> None:
         p = payload or {}
         pl = stream_event_payload(
@@ -83,6 +84,7 @@ class StreamEventPublisher:
             message=message,
             frame_count=p.get("frame_count"),
             last_pts=p.get("last_pts"),
+            last_error=last_error or p.get("last_error"),
         )
         await self._bus.publish_event(STREAM_EVENTS, channel_id, pl)
 
@@ -240,6 +242,44 @@ class StreamProcessManager:
                 handle.last_exit_code = proc.returncode
                 if handle.stopping:
                     continue
+
+                # stderr 수집 (FAILED 시 last_error로 발행)
+                stderr_snippet: Optional[str] = None
+                if proc.stderr:
+                    try:
+                        raw = await asyncio.wait_for(proc.stderr.read(), timeout=1.0)
+                        stderr_snippet = raw.decode("utf-8", errors="replace").strip()[-2000:]
+                    except (asyncio.TimeoutError, Exception):
+                        pass
+
+                # 정상 종료(0): STOPPED 발행, DB 전이, lease 해제, 재시작 없음
+                if proc.returncode == 0:
+                    await self.stream_repo.set_last_error(channel_id, "")
+                    row = await self.stream_repo.get(channel_id)
+                    current = (row or {}).get("status") or "running"
+                    await self.stream_repo.transition_status(channel_id, current, "stopped")
+                    await self.event_publisher.stream_event(
+                        "STOPPED", channel_id, self.worker_id,
+                        message="eos",
+                        payload={"reason": "eos", "exit_code": 0},
+                    )
+                    with contextlib.suppress(Exception):
+                        await self.lease_store.release(channel_id, self.worker_id)
+                    self._procs.pop(channel_id, None)
+                    logger.info("channel_id=%s pipeline exited normally exit_code=0", channel_id)
+                    continue
+
+                # 비정상 종료: FAILED 발행 후 재시작 로직
+                err_msg = f"exit_code={proc.returncode}"
+                if stderr_snippet:
+                    err_msg += " " + stderr_snippet[:500]
+                await self.stream_repo.set_last_error(channel_id, err_msg)
+                await self.event_publisher.stream_event(
+                    "FAILED", channel_id, self.worker_id,
+                    message=err_msg,
+                    last_error=stderr_snippet[:1024] if stderr_snippet else None,
+                )
+
                 handle.restart_count += 1
                 await self.stream_repo.increment_restart_count(channel_id)
                 if should_stop_restarting(handle.restart_count, self.max_restarts):
@@ -248,7 +288,7 @@ class StreamProcessManager:
                     )
                     await self.event_publisher.stream_event(
                         "FAILED", channel_id, self.worker_id,
-                        message=f"exit_code={proc.returncode} restart={handle.restart_count}",
+                        message=f"max_restarts exceeded ({handle.restart_count})",
                     )
                     await self.stop_stream(channel_id, reason="max_restart_exceeded")
                     continue

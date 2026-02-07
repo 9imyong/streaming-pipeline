@@ -26,6 +26,8 @@ class StartStreamRequest(BaseModel):
     source_rtsp: str = Field(..., description="RTSP 소스 URL")
     output: str = Field(default="hls", description="hls | rtsp | mjpeg")
     ai_profile: str | None = Field(None, description="AI 프로파일")
+    overlay_mode: str | None = Field(None, description="NONE | SIMPLE | OSD. 기본 NONE")
+    overlay_label: str | None = Field(None, description="SIMPLE 시 textoverlay 텍스트")
     idempotency_key: str | None = Field(None, description="멱등 키. 없으면 자동 생성")
 
 
@@ -57,6 +59,8 @@ async def start_stream(
         source_rtsp=body.source_rtsp,
         output=body.output,
         ai_profile=body.ai_profile,
+        overlay_mode=body.overlay_mode,
+        overlay_label=body.overlay_label,
         idempotency_key=body.idempotency_key,
     )
     return StartStreamResponse(job_id=result.job_id, channel_id=result.channel_id)
