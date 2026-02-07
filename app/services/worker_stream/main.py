@@ -30,7 +30,7 @@ async def run() -> None:
     from app.infrastructure.persistence.stream_repository import DbStreamRepository
     from app.infrastructure.persistence.lease_db import DbLeaseStore
     from app.services.worker_stream.manager import StreamProcessManager
-    from app.services.worker_stream.runner import StubStreamRunner
+    from app.infrastructure.runners.gstreamer import GstreamerStreamRunner
 
     worker_id = os.environ.get("WORKER_ID") or os.environ.get("HOSTNAME", "worker-1")
     producer = KafkaProducerWrapper()
@@ -41,7 +41,7 @@ async def run() -> None:
     consumer = KafkaConsumerBase(group_id="stream-worker-v1")
     await consumer.start([STREAM_COMMANDS])
     command_iter = _command_iterator(consumer)
-    runner = StubStreamRunner()
+    runner = GstreamerStreamRunner()
     manager = StreamProcessManager(
         worker_id=worker_id,
         stream_repo=stream_repo,

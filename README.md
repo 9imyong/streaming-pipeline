@@ -159,7 +159,8 @@ docker compose -f docker/docker-compose.yml up -d
 
 ### 8.1 스모크 테스트 (START/STOP → Kafka → Orchestrator)
 
-1. **DB 초기화** (최초 1회):  
+1. **MySQL 기동 후 DB 초기화** (최초 1회):  
+   먼저 `docker compose -f docker/docker-compose.yml up -d mysql` 로 MySQL 컨테이너(streaming-mysql)를 띄운 뒤, healthcheck 통과 후:  
    `docker exec -i streaming-mysql mysql -uroot -pdevpass streaming_pipeline_dev < app/infrastructure/persistence/migrations/001_streams_jobs_mysql.sql`
 2. **START**:  
    `curl -s -X POST http://localhost:8000/v1/streams -H "Content-Type: application/json" -d '{"channel_id":"ch1","source_rtsp":"rtsp://example/stream"}'`  
@@ -177,6 +178,16 @@ SELECT channel_id, status, desired_state, assigned_worker_id, updated_at FROM st
 -- jobs 멱등 기록 확인
 SELECT job_id, channel_id, idempotency_key, command, created_at FROM jobs ORDER BY created_at DESC LIMIT 10;
 ```
+
+### 8.3 GStreamer Stream Worker 검증 (실제 파이프라인)
+
+- **실행**: `docker compose -f docker/docker-compose.yml up -d mysql kafka api orchestrator stream-worker` 후 DB 초기화(8.1 참고).
+- **START 후 PLAYING**:  
+  `curl -s -X POST http://localhost:8000/v1/streams -H "Content-Type: application/json" -d '{"channel_id":"ch1","source_rtsp":"rtsp://유효한주소/stream"}'`  
+  → stream-worker 로그에 `channel_id=ch1 pipeline_id=ch1 starting pipeline`, `STARTED` 이벤트 발행.
+- **실패 시 FAILED**: `source_rtsp`를 잘못된 URL로 주면 파이프라인 종료 → stderr 수집 후 `FAILED` 이벤트 발행, `last_error`에 GStreamer 메시지 포함.
+- **STOP 후 정상 종료**: `curl -s -X DELETE http://localhost:8000/v1/streams/ch1` → 워커가 프로세스 terminate → `STOPPED` 이벤트.
+- **오버레이**: params에 `overlay_mode`(NONE/SIMPLE/OSD), SIMPLE 시 `overlay_label` 선택. 파이프라인 재시작 시 반영.
 
 ---
 

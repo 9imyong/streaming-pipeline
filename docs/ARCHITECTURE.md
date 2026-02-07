@@ -71,6 +71,17 @@
 - **(운영)** S3/MinIO/Object Storage 또는 NFS/PVC
 - RTSP relay / MJPEG면 워커가 직접 port 서빙하거나 중계 서버
 
+### 7.1) 오버레이(박스/라벨) 옵션
+
+| 모드 | 방식 | 장점 | 단점 / 운영 |
+|------|------|------|-------------|
+| **NONE** | 오버레이 없음 | 지연·CPU 최소 | - |
+| **SIMPLE** | textoverlay/cairooverlay 등으로 간단 텍스트·박스 | 구현 빠름, 디버깅 용이 | gst-launch subprocess에서는 시작 시 텍스트 고정; 동적 갱신은 OSD 또는 in-process 필요 |
+| **OSD** | 메타데이터 버퍼 attach + OSD 요소가 렌더링 (DeepStream OSD 또는 custom plugin) | 확장성, NVIDIA 환경에서 정석 | 플러그인/환경 의존; `identity name=osd-inject` 등 훅으로 추후 교체 |
+
+- **성능**: 프레임을 Python(OpenCV)으로 꺼내지 않고, GStreamer 요소 내에서만 처리.
+- **권장**: 로컬/디버그는 SIMPLE, 프로덕션/박스 정확도는 OSD(DeepStream) 또는 전용 플러그인.
+
 ### 8) Observability
 
 - **Logs**: 구조화 로그 + `request_id` / `channel_id` / `job_id` 필수

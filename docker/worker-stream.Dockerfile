@@ -10,7 +10,8 @@ RUN uv pip compile pyproject.toml -o requirements.lock \
 
 COPY app/ ./app/
 
-# ========== 런타임: 오프라인 pip 설치, ffmpeg/gstreamer만 추가 ==========
+# ========== 런타임: 오프라인 pip 설치 + GStreamer(gst-launch-1.0) ==========
+# rtspsrc/h264/HLSSink2 등: plugins-base, good, bad, ugly, libav
 FROM python:3.11-slim AS runtime
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \

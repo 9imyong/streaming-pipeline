@@ -60,6 +60,8 @@ class CreateStreamRunner:
         source_rtsp: str,
         output: str = "hls",
         ai_profile: str | None = None,
+        overlay_mode: str | None = None,
+        overlay_label: str | None = None,
         idempotency_key: str | None = None,
     ) -> StartStreamResult:
         return await create_stream(
@@ -70,6 +72,8 @@ class CreateStreamRunner:
             source_rtsp=source_rtsp,
             output=output,
             ai_profile=ai_profile,
+            overlay_mode=overlay_mode,
+            overlay_label=overlay_label,
             idempotency_key=idempotency_key,
         )
 

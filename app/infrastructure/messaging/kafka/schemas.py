@@ -39,9 +39,10 @@ def stream_event_payload(
     message: str | None = None,
     frame_count: int | None = None,
     last_pts: float | None = None,
+    last_error: str | None = None,
 ) -> dict:
-    """stream.events 페이로드. 이미지 바이트 없음."""
-    return with_schema_version({
+    """stream.events 페이로드. 이미지 바이트 없음. last_error는 FAILED 시 GStreamer 등 에러 요약."""
+    payload = {
         "event": event,
         "channel_id": channel_id,
         "worker_id": worker_id,
@@ -50,7 +51,10 @@ def stream_event_payload(
         "frame_count": frame_count,
         "last_pts": last_pts,
         "created_at": datetime.now(timezone.utc).isoformat(),
-    })
+    }
+    if last_error is not None:
+        payload["last_error"] = last_error[:1024]
+    return with_schema_version(payload)
 
 
 def ai_event_payload(

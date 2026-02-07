@@ -21,6 +21,8 @@ async def create_stream(
     source_rtsp: str,
     output: str = "hls",
     ai_profile: str | None = None,
+    overlay_mode: str | None = None,
+    overlay_label: str | None = None,
     idempotency_key: str | None = None,
     job_id: str | None = None,
 ) -> StartStreamResult:
@@ -37,14 +39,19 @@ async def create_stream(
 
     # 상태·Job 저장 (ports 경유)
     await job_repo.create(job_id=jid, channel_id=channel_id, idempotency_key=idem, command="START")
+    params = {
+        "source_rtsp": source_rtsp,
+        "output": output,
+        "ai_profile": ai_profile,
+    }
+    if overlay_mode is not None:
+        params["overlay_mode"] = overlay_mode
+    if overlay_label is not None:
+        params["overlay_label"] = overlay_label
     await stream_repo.create_or_update(
         channel_id=channel_id,
         desired_state="running",
-        pipeline_params={
-            "source_rtsp": source_rtsp,
-            "output": output,
-            "ai_profile": ai_profile,
-        },
+        pipeline_params=params,
     )
     # command 발행 → Orchestrator가 소비해 lease 할당 후 Worker에 지시 (이 레이어는 발행만)
     await command_bus.publish_command(
@@ -54,11 +61,7 @@ async def create_stream(
             "channel_id": channel_id,
             "job_id": jid,
             "idempotency_key": idem,
-            "params": {
-                "source_rtsp": source_rtsp,
-                "output": output,
-                "ai_profile": ai_profile,
-            },
+            "params": params,
         },
     )
     return StartStreamResult(job_id=jid, channel_id=channel_id)
