@@ -142,10 +142,16 @@ class StreamProcessManager:
                 return
             if cmd.get("command") == "START":
                 channel_id = cmd.get("channel_id") or ""
-                # lease 없으면 실행 금지: DB에서 우리가 할당받았는지 확인
+                # Orchestrator가 DB에 assigned_worker_id 넣기 전에 메시지를 받을 수 있음 → 최대 5초 대기 후 재확인
                 row = await self.stream_repo.get(channel_id)
+                for attempt in range(6):
+                    if _is_lease_valid(row, self.worker_id):
+                        break
+                    if attempt < 5:
+                        await asyncio.sleep(1.0)
+                        row = await self.stream_repo.get(channel_id)
                 if not _is_lease_valid(row, self.worker_id):
-                    logger.debug("start skipped no lease channel_id=%s", channel_id)
+                    logger.debug("start skipped no lease channel_id=%s after retries", channel_id)
                     continue
                 spec = self._parse_spec(cmd)
                 await self.start_stream(spec)
@@ -190,6 +196,11 @@ class StreamProcessManager:
             return
         handle = ProcHandle(spec=spec, process=proc, started_at=time.time())
         self._procs[spec.channel_id] = handle
+        # 시작 직후 lease 한 번 갱신 (갱신 루프는 10초마다라 첫 만료 방지)
+        try:
+            await self.lease_store.renew(spec.channel_id, self.worker_id, self.lease_ttl_seconds)
+        except Exception as e:
+            logger.warning("immediate lease renew failed channel_id=%s: %s", spec.channel_id, e)
         # 러너가 bus로 STARTED 발행하면 중복 방지
         if not getattr(proc, "publishes_lifecycle_events", False):
             await self.event_publisher.stream_event(
@@ -294,16 +305,16 @@ class StreamProcessManager:
                     )
                     continue
 
-                # 비정상 종료: FAILED 발행(러너가 안 했을 때만) 후 재시작 로직
-                err_msg = f"exit_code={proc.returncode}"
-                if stderr_snippet:
+                # 비정상 종료: FAILED 발행(러너가 안 했을 때만) 후 재시작 로직. Gst bus ERROR 등 last_error 우선 저장.
+                err_msg = getattr(proc, "last_error", None) or f"exit_code={proc.returncode}"
+                if not getattr(proc, "last_error", None) and stderr_snippet:
                     err_msg += " " + stderr_snippet[:500]
-                await self.stream_repo.set_last_error(channel_id, err_msg)
+                await self.stream_repo.set_last_error(channel_id, err_msg[:1024])
                 if not runner_publishes:
                     await self.event_publisher.stream_event(
                         "FAILED", channel_id, self.worker_id,
                         message=err_msg,
-                        last_error=stderr_snippet[:1024] if stderr_snippet else None,
+                        last_error=(getattr(proc, "last_error", None) or stderr_snippet)[:1024] if (getattr(proc, "last_error", None) or stderr_snippet) else None,
                     )
                 logger.warning(
                     "pipeline failed channel_id=%s exit_code=%s restart_count=%s",
