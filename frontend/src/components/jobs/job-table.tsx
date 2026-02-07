@@ -29,6 +29,8 @@ import { EmptyState } from "@/components/common/empty";
 import { LoadingTable } from "@/components/common/loading";
 
 const PAGE_SIZE = 20;
+const JOBS_LIST_LIMIT = 500;
+const LARGE_TABLE_WARNING = 1000;
 const STATUS_OPTIONS: { value: string; label: string }[] = [
   { value: "", label: "All" },
   { value: "PENDING", label: "Pending" },
@@ -118,14 +120,13 @@ export function JobTable({ streamId }: { streamId?: string }) {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [page, setPage] = useState(0);
+  const listParams = streamId
+    ? { stream_id: streamId, limit: JOBS_LIST_LIMIT }
+    : { limit: JOBS_LIST_LIMIT };
 
   const { data: jobs = [], isLoading, error, refetch } = useQuery({
-    ...jobsQueryOptions,
-    queryKey: streamId
-      ? (["jobs", { stream_id: streamId }] as const)
-      : jobsQueryOptions.queryKey,
-    queryFn: () =>
-      fetchJobs(streamId ? { stream_id: streamId, limit: 500 } : undefined),
+    ...jobsQueryOptions(listParams),
+    queryFn: () => fetchJobs(listParams),
   });
 
   const filteredData = useMemo(() => {
@@ -182,8 +183,18 @@ export function JobTable({ streamId }: { streamId?: string }) {
     );
   }
 
+  const showLargeWarning = jobs.length >= LARGE_TABLE_WARNING;
+  const showLimitNotice = jobs.length >= JOBS_LIST_LIMIT;
+
   return (
     <div className="space-y-4">
+      {(showLargeWarning || showLimitNotice) && (
+        <div className="rounded border border-amber-500/50 bg-amber-500/10 px-3 py-2 text-sm text-amber-800 dark:text-amber-200">
+          {showLargeWarning
+            ? `표시 제한 ${JOBS_LIST_LIMIT}건. 1,000건 이상일 수 있습니다. 필터로 범위를 좁히세요.`
+            : `표시 ${jobs.length}건 (limit=${JOBS_LIST_LIMIT}). 더 보려면 필터 사용.`}
+        </div>
+      )}
       <div className="flex flex-wrap items-center gap-4">
         <Input
           placeholder="Search by job_id or stream_id..."

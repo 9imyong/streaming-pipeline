@@ -13,10 +13,13 @@ import type {
 } from "./types";
 import * as mock from "./mock";
 
-// Streams — 백엔드: GET list, GET one, POST (start), DELETE (stop)
-export async function fetchStreams(): Promise<StreamListItem[]> {
+// Streams — 백엔드: GET list (limit/offset), GET one, POST (start), DELETE (stop)
+export async function fetchStreams(params?: {
+  limit?: number;
+  offset?: number;
+}): Promise<StreamListItem[]> {
   if (isMockMode()) return mock.mockFetchStreams();
-  return apiClient<StreamListItem[]>(endpoints.streams());
+  return apiClient<StreamListItem[]>(endpoints.streams(params));
 }
 
 export async function fetchStream(id: string): Promise<Stream | null> {
@@ -45,9 +48,10 @@ export async function streamStop(id: string): Promise<void> {
   await apiClient<void>(endpoints.streamStop(id), { method: "DELETE" });
 }
 
-// Jobs
+// Jobs — limit/offset 서버 페이지네이션 가정
 export async function fetchJobs(params?: {
   limit?: number;
+  offset?: number;
   status?: string;
   stream_id?: string;
 }): Promise<Job[]> {

@@ -5,16 +5,30 @@
 const PREFIX = "/v1";
 
 export const endpoints = {
-  streams: () => `${PREFIX}/streams`,
+  /** 목록: limit/offset 서버 페이지네이션 가정 */
+  streams: (params?: { limit?: number; offset?: number }) => {
+    const search = new URLSearchParams();
+    if (params?.limit != null) search.set("limit", String(params.limit));
+    if (params?.offset != null) search.set("offset", String(params.offset));
+    const q = search.toString();
+    return `${PREFIX}/streams${q ? `?${q}` : ""}`;
+  },
   stream: (id: string) => `${PREFIX}/streams/${id}`,
   /** Start: POST /v1/streams (body: channel_id, source_rtsp, output) */
   streamStart: () => `${PREFIX}/streams`,
   /** Stop: DELETE /v1/streams/:id */
   streamStop: (id: string) => `${PREFIX}/streams/${id}`,
 
-  jobs: (params?: { limit?: number; status?: string; stream_id?: string }) => {
+  /** 목록: limit/offset 서버 페이지네이션 가정 */
+  jobs: (params?: {
+    limit?: number;
+    offset?: number;
+    status?: string;
+    stream_id?: string;
+  }) => {
     const search = new URLSearchParams();
     if (params?.limit != null) search.set("limit", String(params.limit));
+    if (params?.offset != null) search.set("offset", String(params.offset));
     if (params?.status) search.set("status", params.status);
     if (params?.stream_id) search.set("stream_id", params.stream_id);
     const q = search.toString();
