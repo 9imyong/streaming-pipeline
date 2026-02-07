@@ -16,3 +16,8 @@ class ObservabilityReader(ABC):
     async def get_last_errors(self, limit: int = 50) -> list[dict[str, Any]]:
         """last_error가 있는 채널 목록. [{ channel_id, last_error, status, restart_count }]."""
         ...
+
+    @abstractmethod
+    async def get_stream_list(self, limit: int = 100) -> list[dict[str, Any]]:
+        """채널 목록 (status, desired_state, worker_id, updated_at 등). UI/콘솔용."""
+        ...

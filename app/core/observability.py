@@ -29,21 +29,21 @@ def is_prometheus_available() -> bool:
 def create_counter(name: str, documentation: str, *labelnames: str) -> Any:
     """Counter 생성. 의존성 없으면 더미 반환."""
     if _PROMETHEUS_AVAILABLE and Counter is not None:
-        return Counter(name, documentation, labelnames=labelnames or None)
+        return Counter(name, documentation, labelnames=labelnames or ())
     return _NoOpMetric()
 
 
 def create_gauge(name: str, documentation: str, *labelnames: str) -> Any:
     """Gauge 생성."""
     if _PROMETHEUS_AVAILABLE and Gauge is not None:
-        return Gauge(name, documentation, labelnames=labelnames or None)
+        return Gauge(name, documentation, labelnames=labelnames or ())
     return _NoOpMetric()
 
 
 def create_histogram(name: str, documentation: str, *labelnames: str) -> Any:
     """Histogram 생성 (지연 시간 등)."""
     if _PROMETHEUS_AVAILABLE and Histogram is not None:
-        return Histogram(name, documentation, labelnames=labelnames or None)
+        return Histogram(name, documentation, labelnames=labelnames or ())
     return _NoOpMetric()
 
 
