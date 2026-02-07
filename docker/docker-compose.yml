@@ -144,18 +144,18 @@ services:
     ports:
       - "6379:6379"
 
-  ui:
+  # Next.js 운영 UI (메인)
+  web:
     build:
       context: ..
-      dockerfile: docker/ui-streamlit.Dockerfile
-    image: streaming-ui:latest
-    container_name: streaming-ui
+      dockerfile: docker/web-next.Dockerfile
+      args:
+        NEXT_PUBLIC_API_BASE_URL: http://localhost:8000
+        NEXT_PUBLIC_HLS_BASE_URL: http://localhost/hls
+    image: streaming-web:latest
+    container_name: streaming-web
     ports:
-      - "8501:8501"
-    environment:
-      - API_BASE_URL=http://api:8000
-      # 브라우저가 m3u8 요청을 보내므로 호스트에서 접근 가능한 주소 사용 (API는 8000으로 노출)
-      - HLS_BASE_URL=http://localhost/hls
+      - "3000:3000"
     depends_on:
       - api
 
