@@ -11,6 +11,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 EnvKind = Literal["dev", "prod"]
+CommandBusKind = Literal["kafka", "stub"]
 
 
 class Settings(BaseSettings):
@@ -43,6 +44,8 @@ class Settings(BaseSettings):
         default="localhost:9092",
         alias="KAFKA_BOOTSTRAP_SERVERS",
     )
+    # CommandBus: kafka(기본) | stub(로컬/테스트, Kafka 미사용)
+    command_bus: CommandBusKind = Field(default="kafka", alias="COMMAND_BUS")
 
     # 앱 노출용 (헬스/메트릭 등)
     host_ip: str = Field(default="localhost", alias="HOST_IP")

@@ -1,6 +1,18 @@
-"""유스케이스 입출력 DTO (dataclass). API ↔ Usecase 간 전달용."""
+"""유스케이스 입출력 DTO (dataclass). API ↔ Usecase 간 전달용. worker_stream runner 스펙 포함."""
 from dataclasses import dataclass
 from typing import Any, Optional
+
+
+@dataclass(slots=True)
+class StreamSpec:
+    """채널 스트리밍 파이프라인 실행 스펙. manager·runner·infrastructure 공통."""
+    channel_id: str
+    source_uri: str
+    output_type: str
+    output_uri: Optional[str]
+    ai_profile: Optional[str]
+    params: dict
+    worker_id: str
 
 
 @dataclass

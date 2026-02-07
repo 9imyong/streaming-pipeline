@@ -41,7 +41,7 @@ async def run() -> None:
     consumer = KafkaConsumerBase(group_id="stream-worker-v1")
     await consumer.start([STREAM_COMMANDS])
     command_iter = _command_iterator(consumer)
-    runner = GstreamerStreamRunner()
+    runner = GstreamerStreamRunner(worker_id=worker_id, event_bus=event_bus, loop=asyncio.get_running_loop())
     manager = StreamProcessManager(
         worker_id=worker_id,
         stream_repo=stream_repo,

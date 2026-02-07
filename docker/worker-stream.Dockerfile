@@ -10,14 +10,15 @@ RUN uv pip compile pyproject.toml -o requirements.lock \
 
 COPY app/ ./app/
 
-# ========== 런타임: 오프라인 pip 설치 + GStreamer(gst-launch-1.0) ==========
-# rtspsrc/h264/HLSSink2 등: plugins-base, good, bad, ugly, libav
+# ========== 런타임: 오프라인 pip 설치 + GStreamer (Python Gst 바인딩용 gir) ==========
+# Python Gst 파이프라인: gir1.2-gstreamer-1.0 등 필요. plugins: base, good, bad, ugly, libav
 FROM python:3.11-slim AS runtime
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
     libgstreamer1.0-0 gstreamer1.0-plugins-base gstreamer1.0-plugins-good \
     gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly gstreamer1.0-libav \
     gstreamer1.0-tools \
+    gir1.2-gstreamer-1.0 gir1.2-gst-plugins-base-1.0 libgirepository1.0-1 libcairo2 \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app

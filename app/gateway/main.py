@@ -7,9 +7,11 @@ API Gateway 진입점.
   command_bus = KafkaCommandBus (stream.commands 발행), repository = DB 구현체.
 """
 import logging
+import traceback
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 
 from app.gateway.routes import health, streams
 
@@ -19,26 +21,47 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """리소스 초기화. Kafka Producer + KafkaCommandBus, DB Repository 주입."""
-    from app.infrastructure.messaging.kafka.command_bus_kafka import KafkaCommandBus
-    from app.infrastructure.messaging.kafka.producer import KafkaProducerWrapper
+    """리소스 초기화. COMMAND_BUS=kafka면 KafkaCommandBus, stub이면 StubCommandBus(dev/테스트)."""
+    from app.core.config import get_settings
     from app.infrastructure.persistence.stream_repository import DbStreamRepository
     from app.infrastructure.persistence.job_repository import DbJobRepository
 
-    producer = KafkaProducerWrapper()
-    await producer.start()
-    app.state._kafka_producer = producer  # shutdown 시 stop용
-    app.state.command_bus = KafkaCommandBus(producer)
+    settings = get_settings()
     app.state.stream_repository = DbStreamRepository()
     app.state.job_repository = DbJobRepository()
-    logger.info("Gateway lifespan: KafkaCommandBus + DB repositories wired")
+
+    if settings.command_bus == "stub":
+        from app.infrastructure.messaging.command_bus_stub import StubCommandBus
+        app.state.command_bus = StubCommandBus()
+        app.state._kafka_producer = None
+        logger.info("Gateway lifespan: StubCommandBus (COMMAND_BUS=stub) + DB repositories wired")
+    else:
+        from app.infrastructure.messaging.kafka.command_bus import KafkaCommandBus
+        from app.infrastructure.messaging.kafka.producer import KafkaProducerWrapper
+        producer = KafkaProducerWrapper()
+        await producer.start()
+        app.state._kafka_producer = producer
+        app.state.command_bus = KafkaCommandBus(producer)
+        logger.info("Gateway lifespan: KafkaCommandBus + DB repositories wired")
+
     try:
         yield
     finally:
-        await producer.stop()
-        logger.info("Gateway lifespan: Kafka producer stopped")
+        if app.state._kafka_producer:
+            await app.state._kafka_producer.stop()
+            logger.info("Gateway lifespan: Kafka producer stopped")
 
 
 app = FastAPI(title="streaming-pipeline-gateway", version="0.1.0", lifespan=lifespan)
 app.include_router(streams.router, prefix="/v1")
 app.include_router(health.router)
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    """500 시 로그에 traceback 남겨 원인 파악 가능하게."""
+    logger.exception(
+        "unhandled_exception path=%s method=%s: %s\n%s",
+        request.url.path, request.method, exc, traceback.format_exc(),
+    )
+    return JSONResponse(status_code=500, content={"detail": "Internal Server Error"})
