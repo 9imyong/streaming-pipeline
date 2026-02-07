@@ -32,17 +32,18 @@ def _overlay_segment(overlay_mode: Optional[str], overlay_label: Optional[str]) 
     """
     overlay_mode=NONE|SIMPLE|OSD 에 따른 파이프라인 세그먼트.
     - NONE: 없음.
-    - SIMPLE: textoverlay로 라벨/카운트 표시.
-    - OSD: 메타데이터 주입 훅(고정). 구현체는 timeoverlay 등 교체 가능.
+    - SIMPLE: textoverlay name=overlay (주기적으로 overlay_store에서 갱신).
+    - OSD: 메타데이터 주입 훅(고정). DeepStream/custom plugin 교체 가능.
     """
     mode = (overlay_mode or "NONE").upper()
     if mode == "NONE":
         return ""
     if mode == "SIMPLE":
-        text = (overlay_label or "stream").replace('"', '\\"')[:64]
-        return f'textoverlay text="{text}" valignment=top halignment=left ! '
+        # 초기 텍스트; 런타임에 overlay_store 기반으로 갱신
+        fallback = (overlay_label or "—").replace('"', '\\"')[:64]
+        return f'textoverlay name=overlay text="{fallback}" valignment=top halignment=left ! '
     if mode == "OSD":
-        # 고정 훅: timeoverlay 등. 플러그인 교체 시 이 한 줄만 변경.
+        # 고정 훅: element 이름만 바꿔서 DeepStream/custom plugin 교체 가능 (docs/OVERLAY_OSD.md)
         return "timeoverlay valignment=top halignment=left ! "
     return ""
 
@@ -112,6 +113,8 @@ def _run_pipeline_thread(
     event_bus: EventBus,
     loop: asyncio.AbstractEventLoop,
     handle: _GstPipelineHandle,
+    overlay_mode: Optional[str] = None,
+    overlay_label: Optional[str] = None,
 ) -> None:
     import gi
     gi.require_version("Gst", "1.0")
@@ -126,6 +129,31 @@ def _run_pipeline_thread(
 
     main_loop = GLib.MainLoop()
     handle._pipeline_id = channel_id
+
+    # SIMPLE: overlay_store에서 주기적으로 텍스트 갱신
+    if (overlay_mode or "").upper() == "SIMPLE":
+        from app.services.worker_stream.overlay_store import (
+            get_detections_sync,
+            format_detections_to_label_string,
+        )
+
+        overlay_el = pipeline.get_by_name("overlay")
+        fallback_text = (overlay_label or "—")[:64]
+
+        def _update_overlay_text() -> bool:
+            if overlay_el is None:
+                return False
+            if handle._done.is_set():
+                return False  # 파이프라인 종료 시 타이머 중단
+            try:
+                dets = get_detections_sync(channel_id)
+                text = format_detections_to_label_string(dets) or fallback_text
+                overlay_el.set_property("text", text[:256])
+            except Exception:  # noqa: BLE001
+                pass
+            return True  # 계속 주기 호출
+
+        GLib.timeout_add(500, _update_overlay_text)
 
     def _publish(event_type: str, message: Optional[str] = None, last_error: Optional[str] = None) -> None:
         async def _do() -> None:
@@ -212,6 +240,10 @@ class GstreamerStreamRunner:
         handle = _GstPipelineHandle(self._loop)
         job_id = (spec.params or {}).get("job_id")
 
+        params = spec.params or {}
+        overlay_mode = params.get("overlay_mode")
+        overlay_label = params.get("overlay_label")
+
         def run() -> None:
             _run_pipeline_thread(
                 pipeline_desc,
@@ -221,6 +253,8 @@ class GstreamerStreamRunner:
                 self._event_bus,
                 self._loop,
                 handle,
+                overlay_mode=overlay_mode,
+                overlay_label=overlay_label,
             )
 
         t = threading.Thread(target=run, name=f"gst-{spec.channel_id}", daemon=True)
