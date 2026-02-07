@@ -17,3 +17,6 @@ tensorrt
 **/*.pyc
 **/*test*
 !scripts/smoke_test.sh
+
+# Cursor IDE 규칙(로컬 전용, 커밋 제외)
+.cursor/
