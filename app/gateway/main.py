@@ -2,16 +2,19 @@
 API Gateway 진입점.
 - POST /v1/streams: 202 Accepted (유스케이스만 호출)
 - GET/DELETE /v1/streams/{channel_id}: 상태 조회, 중지
+- GET /hls/{channel_id}/index.m3u8 등: HLS 세그먼트 정적 서빙 (stream-worker와 공유 볼륨)
 - GET /health
 - lifespan에서 stream_repository, job_repository, command_bus 를 app.state에 주입.
   command_bus = KafkaCommandBus (stream.commands 발행), repository = DB 구현체.
 """
 import logging
+import os
 import traceback
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from app.gateway.routes import health, observability, streams
 
@@ -31,6 +34,8 @@ async def lifespan(app: FastAPI):
     app.state.stream_repository = DbStreamRepository()
     app.state.job_repository = DbJobRepository()
     app.state.observability_reader = DbObservabilityReader()
+    from app.infrastructure.redis.ai_latest_store import RedisAiLatestStore
+    app.state.ai_latest_store = RedisAiLatestStore()
 
     if settings.command_bus == "stub":
         from app.infrastructure.messaging.command_bus_stub import StubCommandBus
@@ -58,6 +63,13 @@ app = FastAPI(title="streaming-pipeline-gateway", version="0.1.0", lifespan=life
 app.include_router(streams.router, prefix="/v1")
 app.include_router(observability.router, prefix="/v1")
 app.include_router(health.router)
+
+# HLS 세그먼트/플레이리스트 서빙 (stream-worker가 /data/hls 에 쓰고, api는 같은 볼륨 마운트)
+_HLS_DIR = os.environ.get("HLS_SERVE_DIR", "/data/hls")
+if os.path.isdir(_HLS_DIR):
+    app.mount("/hls", StaticFiles(directory=_HLS_DIR), name="hls")
+else:
+    logging.getLogger(__name__).warning("HLS serve dir not found path=%s (skip /hls mount)", _HLS_DIR)
 
 
 @app.exception_handler(Exception)
