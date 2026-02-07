@@ -51,7 +51,9 @@ class StreamCommand:
 #     "source_rtsp": "rtsp://user:pass@host:554/stream",
 #     "output": "hls",
 #     "output_path": "/data/playlist/streaming/cctv-01",
-#     "ai_profile": "ppe"
+#     "ai_profile": "ppe",
+#     "overlay_mode": "NONE",
+#     "overlay_label": "CH1"
 #   },
 #   "created_at": "2025-02-07T10:00:00.000000+00:00"
 # }
