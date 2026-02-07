@@ -1,4 +1,7 @@
-"""인메모리 저장 (테스트/개발용). 포트 인터페이스 구현."""
+"""인메모리 저장 (테스트 전용). 포트 인터페이스 구현.
+- 운영/배포는 DB 구현체 사용 (DbStreamRepository, DbJobRepository).
+- application port 인터페이스는 동일하게 유지.
+"""
 from typing import Any, Optional
 
 from app.application.ports.job_repository import JobRepository
@@ -6,7 +9,7 @@ from app.application.ports.stream_repository import StreamRepository
 
 
 class InMemoryStreamRepository(StreamRepository):
-    """스트림 저장소 인메모리 구현. Gateway/테스트용."""
+    """스트림 저장소 인메모리 구현. 테스트 전용. 운영은 DbStreamRepository 사용."""
 
     def __init__(self) -> None:
         self._store: dict[str, dict[str, Any]] = {}
@@ -62,7 +65,7 @@ class InMemoryStreamRepository(StreamRepository):
 
 
 class InMemoryJobRepository(JobRepository):
-    """Job 저장소 인메모리 구현. 멱등 키로 조회/생성."""
+    """Job 저장소 인메모리 구현. 테스트 전용. 운영은 DbJobRepository 사용."""
 
     def __init__(self) -> None:
         self._by_key: dict[str, dict] = {}
