@@ -5,8 +5,9 @@ import { fetchMetricsSummary } from "@/lib/api";
 import { metricsSummaryQueryOptions } from "@/lib/query/query-client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ErrorState } from "@/components/common/error";
+import { LoadingTable } from "@/components/common/loading";
 
-export function DashboardSummary() {
+export function MetricsSummaryCards() {
   const { data, isLoading, error, refetch } = useQuery({
     ...metricsSummaryQueryOptions,
     queryFn: fetchMetricsSummary,
@@ -32,7 +33,7 @@ export function DashboardSummary() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="h-8 w-12 animate-pulse rounded bg-muted" />
+              <div className="h-8 w-16 animate-pulse rounded bg-muted" />
             </CardContent>
           </Card>
         ))}
@@ -40,22 +41,28 @@ export function DashboardSummary() {
     );
   }
 
+  const activeStreams =
+    data.active_streams ?? data.running_streams ?? 0;
+  const jobsRate = data.jobs_rate ?? null;
+  const p95Latency = data.p95_latency_ms ?? null;
+  const errorRate = data.error_rate ?? null;
+
   const cards = [
     {
-      title: "RUNNING streams",
-      value: data.running_streams ?? data.active_streams ?? 0,
+      title: "Active streams",
+      value: String(activeStreams),
     },
     {
-      title: "FAILED streams",
-      value: data.failed_streams ?? 0,
+      title: "Jobs rate (per min)",
+      value: jobsRate != null ? String(jobsRate) : "—",
     },
     {
-      title: "Queued jobs",
-      value: data.queued_jobs ?? 0,
+      title: "p95 latency (ms)",
+      value: p95Latency != null ? String(p95Latency) : "—",
     },
     {
-      title: "Active workers",
-      value: data.active_workers ?? 0,
+      title: "Error rate",
+      value: errorRate != null ? `${(errorRate * 100).toFixed(2)}%` : "—",
     },
   ];
 

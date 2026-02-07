@@ -46,9 +46,13 @@ export async function streamStop(id: string): Promise<void> {
 }
 
 // Jobs
-export async function fetchJobs(): Promise<Job[]> {
-  if (isMockMode()) return mock.mockFetchJobs();
-  return apiClient<Job[]>(endpoints.jobs());
+export async function fetchJobs(params?: {
+  limit?: number;
+  status?: string;
+  stream_id?: string;
+}): Promise<Job[]> {
+  if (isMockMode()) return mock.mockFetchJobs(params);
+  return apiClient<Job[]>(endpoints.jobs(params));
 }
 
 export async function fetchJob(id: string): Promise<Job | null> {
@@ -70,6 +74,9 @@ export async function fetchWorkers(): Promise<Worker[]> {
 export async function fetchEvents(params?: {
   stream_id?: string;
   limit?: number;
+  level?: string;
+  type?: string;
+  since?: string;
 }): Promise<StreamEvent[]> {
   if (isMockMode()) return mock.mockFetchEvents(params);
   return apiClient<StreamEvent[]>(endpoints.events(params));

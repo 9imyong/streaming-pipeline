@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   type ColumnDef,
@@ -9,8 +10,9 @@ import {
 } from "@tanstack/react-table";
 import { fetchWorkers } from "@/lib/api";
 import { workersQueryOptions } from "@/lib/query/query-client";
-import type { Worker } from "@/lib/api/types";
+import type { Worker, WorkerStatus } from "@/lib/api/types";
 import { Badge } from "@/components/ui/badge";
+import { Select } from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -19,8 +21,21 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { ErrorState } from "@/components/common/error";
+import { EmptyState } from "@/components/common/empty";
+import { LoadingTable } from "@/components/common/loading";
 
-const workerStatusVariant: Record<string, "default" | "secondary" | "destructive" | "success" | "outline"> = {
+const STATUS_OPTIONS: { value: string; label: string }[] = [
+  { value: "", label: "All" },
+  { value: "IDLE", label: "Idle" },
+  { value: "BUSY", label: "Busy" },
+  { value: "DOWN", label: "Down" },
+];
+
+const workerStatusVariant: Record<
+  string,
+  "default" | "secondary" | "destructive" | "success" | "outline"
+> = {
   IDLE: "secondary",
   BUSY: "success",
   DOWN: "destructive",
@@ -32,21 +47,32 @@ const columns: ColumnDef<Worker>[] = [
     accessorKey: "status",
     header: "Status",
     cell: ({ row }) => (
-      <Badge variant={workerStatusVariant[row.original.status] ?? "outline"} className="capitalize">
+      <Badge
+        variant={workerStatusVariant[row.original.status] ?? "outline"}
+        className="capitalize"
+      >
         {row.original.status}
       </Badge>
     ),
   },
   {
-    accessorKey: "current_streams",
+    id: "current_streams_count",
     header: "Streams",
-    cell: ({ row }) => row.original.current_streams ?? "—",
+    cell: ({ row }) =>
+      row.original.current_streams_count ?? row.original.current_streams ?? "—",
   },
   {
-    accessorKey: "gpu_usage",
-    header: "GPU %",
-    cell: ({ row }) =>
-      row.original.gpu_usage != null ? `${row.original.gpu_usage}%` : "—",
+    id: "gpu",
+    header: "GPU",
+    cell: ({ row }) => {
+      const g = row.original.gpu;
+      if (!g) return row.original.gpu_usage != null ? `${row.original.gpu_usage}%` : "—";
+      const parts = [];
+      if (g.name) parts.push(g.name);
+      if (g.util != null) parts.push(`${g.util}%`);
+      if (g.mem_used != null) parts.push(`${g.mem_used}MB`);
+      return parts.length ? parts.join(" / ") : "—";
+    },
   },
   {
     accessorKey: "last_seen",
@@ -64,70 +90,104 @@ const columns: ColumnDef<Worker>[] = [
 ];
 
 export function WorkerTable() {
-  const { data: workers = [], isLoading, error } = useQuery({
+  const [statusFilter, setStatusFilter] = useState<string>("");
+  const [downOnly, setDownOnly] = useState(false);
+
+  const { data: workers = [], isLoading, error, refetch } = useQuery({
     ...workersQueryOptions,
     queryFn: fetchWorkers,
   });
 
+  const filteredData = useMemo(() => {
+    let list = workers;
+    if (statusFilter) {
+      list = list.filter((w) => w.status === (statusFilter as WorkerStatus));
+    }
+    if (downOnly) {
+      list = list.filter((w) => w.status === "DOWN");
+    }
+    return list;
+  }, [workers, statusFilter, downOnly]);
+
   const table = useReactTable({
-    data: workers,
+    data: filteredData,
     columns,
     getCoreRowModel: getCoreRowModel(),
   });
 
   if (error) {
     return (
-      <div className="rounded-md border border-destructive/50 bg-destructive/10 p-4 text-destructive">
-        Failed to load workers: {error.message}
-      </div>
+      <ErrorState
+        message={`Failed to load workers: ${error.message}`}
+        onRetry={() => refetch()}
+      />
     );
   }
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-12 text-muted-foreground">
-        Loading workers…
-      </div>
-    );
+    return <LoadingTable rows={5} />;
   }
 
   if (workers.length === 0) {
-    return (
-      <div className="rounded-md border border-border p-8 text-center text-muted-foreground">
-        No workers.
-      </div>
-    );
+    return <EmptyState title="No workers" />;
   }
 
   return (
-    <Table>
-      <TableHeader>
-        {table.getHeaderGroups().map((headerGroup) => (
-          <TableRow key={headerGroup.id}>
-            {headerGroup.headers.map((header) => (
-              <TableHead key={header.id}>
-                {header.isPlaceholder
-                  ? null
-                  : flexRender(
-                      header.column.columnDef.header,
-                      header.getContext()
-                    )}
-              </TableHead>
-            ))}
-          </TableRow>
-        ))}
-      </TableHeader>
-      <TableBody>
-        {table.getRowModel().rows.map((row) => (
-          <TableRow key={row.id}>
-            {row.getVisibleCells().map((cell) => (
-              <TableCell key={cell.id}>
-                {flexRender(cell.column.columnDef.cell, cell.getContext())}
-              </TableCell>
-            ))}
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-4">
+        <Select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className="w-40"
+        >
+          {STATUS_OPTIONS.map((o) => (
+            <option key={o.value || "all"} value={o.value}>
+              {o.label}
+            </option>
+          ))}
+        </Select>
+        <label className="flex cursor-pointer items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={downOnly}
+            onChange={(e) => setDownOnly(e.target.checked)}
+            className="rounded border-input"
+          />
+          DOWN only
+        </label>
+      </div>
+      <Table>
+        <TableHeader>
+          {table.getHeaderGroups().map((headerGroup) => (
+            <TableRow key={headerGroup.id}>
+              {headerGroup.headers.map((header) => (
+                <TableHead key={header.id}>
+                  {header.isPlaceholder
+                    ? null
+                    : flexRender(
+                        header.column.columnDef.header,
+                        header.getContext()
+                      )}
+                </TableHead>
+              ))}
+            </TableRow>
+          ))}
+        </TableHeader>
+        <TableBody>
+          {table.getRowModel().rows.map((row) => (
+            <TableRow key={row.id}>
+              {row.getVisibleCells().map((cell) => (
+                <TableCell key={cell.id}>
+                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                </TableCell>
+              ))}
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+      {filteredData.length === 0 && workers.length > 0 && (
+        <p className="text-sm text-muted-foreground">No workers match the filter.</p>
+      )}
+    </div>
   );
 }

@@ -49,6 +49,7 @@ export async function apiClient<T>(
   const timeoutId = setTimeout(() => controller.abort(), timeout);
   const finalSignal = signal ?? controller.signal;
 
+  const start = typeof performance !== "undefined" ? performance.now() : 0;
   try {
     const res = await fetch(url, {
       ...init,
@@ -58,6 +59,19 @@ export async function apiClient<T>(
     clearTimeout(timeoutId);
 
     const responseRequestId = res.headers.get("X-Request-ID") ?? requestId;
+    const durationMs =
+      typeof performance !== "undefined"
+        ? Math.round(performance.now() - start)
+        : 0;
+    if (
+      typeof window !== "undefined" &&
+      process.env.NODE_ENV === "development" &&
+      responseRequestId
+    ) {
+      console.debug(
+        `[API] ${res.status} ${path} request_id=${responseRequestId} duration_ms=${durationMs}`
+      );
+    }
     const text = await res.text();
     let data: T;
     try {

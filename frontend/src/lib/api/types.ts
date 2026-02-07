@@ -48,6 +48,10 @@ export interface Job {
   payload?: unknown;
   result?: unknown;
   failure_reason?: string | null;
+  error_code?: string | null;
+  error_message?: string | null;
+  stack?: string | null;
+  duration_ms?: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -58,21 +62,29 @@ export interface Worker {
   status: WorkerStatus;
   gpu_usage?: number | null;
   current_streams?: number | null;
+  current_streams_count?: number | null;
   last_seen?: string | null;
+  gpu?: { name?: string; mem_used?: number; util?: number } | null;
 }
 
 export interface StreamEvent {
   ts: string;
   level: string;
   stream_id?: string | null;
+  entity?: { job_id?: string; worker_id?: string } | null;
   type: string;
   message: string;
   request_id?: string | null;
+  payload?: unknown;
 }
 
 export interface MetricsSummary {
-  running_streams: number;
-  failed_streams: number;
-  queued_jobs: number;
-  active_workers: number;
+  running_streams?: number;
+  failed_streams?: number;
+  queued_jobs?: number;
+  active_workers?: number;
+  active_streams?: number;
+  jobs_rate?: number;
+  p95_latency_ms?: number | null;
+  error_rate?: number | null;
 }

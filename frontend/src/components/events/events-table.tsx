@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   type ColumnDef,
@@ -7,9 +8,19 @@ import {
   useReactTable,
   flexRender,
 } from "@tanstack/react-table";
+import { AlertCircle } from "lucide-react";
 import { fetchEvents } from "@/lib/api";
 import { eventsQueryOptions } from "@/lib/query/query-client";
 import type { StreamEvent } from "@/lib/api/types";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Table,
   TableBody,
@@ -18,92 +29,231 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { ErrorState } from "@/components/common/error";
+import { EmptyState } from "@/components/common/empty";
+import { LoadingTable } from "@/components/common/loading";
 
-const columns: ColumnDef<StreamEvent>[] = [
-  {
-    accessorKey: "ts",
-    header: "Time",
-    cell: ({ row }) => {
-      const t = row.original.ts;
-      try {
-        return new Date(t).toLocaleString();
-      } catch {
-        return t;
-      }
-    },
-  },
-  { accessorKey: "level", header: "Level" },
-  { accessorKey: "stream_id", header: "Stream ID", cell: ({ row }) => row.original.stream_id ?? "—" },
-  { accessorKey: "type", header: "Type" },
-  { accessorKey: "message", header: "Message" },
+const LEVEL_OPTIONS: { value: string; label: string }[] = [
+  { value: "", label: "All" },
+  { value: "INFO", label: "Info" },
+  { value: "WARN", label: "Warn" },
+  { value: "ERROR", label: "Error" },
 ];
 
-export function EventsTable({ streamId, limit = 50 }: { streamId?: string; limit?: number }) {
-  const params = streamId ? { stream_id: streamId, limit } : { limit };
-  const { data: events = [], isLoading, error } = useQuery({
+const DEFAULT_LIMIT = 200;
+
+export function EventsTable({
+  streamId: initialStreamId,
+  limit = DEFAULT_LIMIT,
+  embed = false,
+}: {
+  streamId?: string;
+  limit?: number;
+  embed?: boolean;
+}) {
+  const [streamIdFilter, setStreamIdFilter] = useState(initialStreamId ?? "");
+  const [levelFilter, setLevelFilter] = useState("");
+  const [typeFilter, setTypeFilter] = useState("");
+  const [selectedEvent, setSelectedEvent] = useState<StreamEvent | null>(null);
+
+  const params = useMemo(
+    () => ({
+      stream_id: streamIdFilter.trim() || undefined,
+      limit,
+      level: levelFilter || undefined,
+      type: typeFilter.trim() || undefined,
+    }),
+    [streamIdFilter, limit, levelFilter, typeFilter]
+  );
+
+  const { data: events = [], isLoading, error, refetch } = useQuery({
     ...eventsQueryOptions(params),
     queryFn: () => fetchEvents(params),
   });
 
+  const filteredData = useMemo(() => {
+    let list = events;
+    if (levelFilter) {
+      list = list.filter((e) => e.level === levelFilter);
+    }
+    if (typeFilter.trim()) {
+      const t = typeFilter.toLowerCase().trim();
+      list = list.filter((e) => e.type.toLowerCase().includes(t));
+    }
+    return list;
+  }, [events, levelFilter, typeFilter]);
+
   const table = useReactTable({
-    data: events,
-    columns,
+    data: filteredData,
+    columns: [
+      {
+        accessorKey: "ts",
+        header: "Time",
+        cell: ({ row }) => {
+          const t = row.original.ts;
+          try {
+            return new Date(t).toLocaleString();
+          } catch {
+            return t;
+          }
+        },
+      },
+      {
+        accessorKey: "level",
+        header: "Level",
+        cell: ({ row }) => {
+          const level = row.original.level;
+          const isError = level === "ERROR";
+          return (
+            <Badge
+              variant={isError ? "destructive" : "secondary"}
+              className={isError ? "gap-1" : ""}
+            >
+              {isError && <AlertCircle className="h-3 w-3" />}
+              {level}
+            </Badge>
+          );
+        },
+      },
+      {
+        accessorKey: "stream_id",
+        header: "Stream ID",
+        cell: ({ row }) => row.original.stream_id ?? "—",
+      },
+      {
+        id: "entity",
+        header: "Entity",
+        cell: ({ row }) => {
+          const e = row.original.entity;
+          if (!e) return "—";
+          const parts = [];
+          if (e.job_id) parts.push(`job:${e.job_id}`);
+          if (e.worker_id) parts.push(`worker:${e.worker_id}`);
+          return parts.length ? parts.join(", ") : "—";
+        },
+      },
+      { accessorKey: "type", header: "Type" },
+      { accessorKey: "message", header: "Message" },
+    ],
     getCoreRowModel: getCoreRowModel(),
   });
 
   if (error) {
     return (
-      <div className="rounded-md border border-destructive/50 bg-destructive/10 p-4 text-destructive">
-        Failed to load events: {error.message}
-      </div>
+      <ErrorState
+        message={`Failed to load events: ${error.message}`}
+        onRetry={() => refetch()}
+      />
     );
   }
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-12 text-muted-foreground">
-        Loading events…
-      </div>
-    );
+    return <LoadingTable rows={5} />;
   }
 
   if (events.length === 0) {
     return (
-      <div className="rounded-md border border-border p-8 text-center text-muted-foreground">
-        No events.
-      </div>
+      <EmptyState
+        title="No events"
+        description="Events will appear when the backend is connected."
+      />
     );
   }
 
   return (
-    <Table>
-      <TableHeader>
-        {table.getHeaderGroups().map((headerGroup) => (
-          <TableRow key={headerGroup.id}>
-            {headerGroup.headers.map((header) => (
-              <TableHead key={header.id}>
-                {header.isPlaceholder
-                  ? null
-                  : flexRender(
-                      header.column.columnDef.header,
-                      header.getContext()
-                    )}
-              </TableHead>
+    <div className="space-y-4">
+      {!embed && (
+        <div className="flex flex-wrap items-center gap-4">
+          <Input
+            placeholder="Stream ID filter"
+            value={streamIdFilter}
+            onChange={(e) => setStreamIdFilter(e.target.value)}
+            className="max-w-xs"
+          />
+          <Select
+            value={levelFilter}
+            onChange={(e) => setLevelFilter(e.target.value)}
+            className="w-32"
+          >
+            {LEVEL_OPTIONS.map((o) => (
+              <option key={o.value || "all"} value={o.value}>
+                {o.label}
+              </option>
             ))}
-          </TableRow>
-        ))}
-      </TableHeader>
-      <TableBody>
-        {table.getRowModel().rows.map((row) => (
-          <TableRow key={row.id}>
-            {row.getVisibleCells().map((cell) => (
-              <TableCell key={cell.id}>
-                {flexRender(cell.column.columnDef.cell, cell.getContext())}
-              </TableCell>
-            ))}
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+          </Select>
+          <Input
+            placeholder="Type filter"
+            value={typeFilter}
+            onChange={(e) => setTypeFilter(e.target.value)}
+            className="max-w-xs"
+          />
+          <span className="text-sm text-muted-foreground">
+            Limit: {limit} · {filteredData.length} shown
+          </span>
+        </div>
+      )}
+      <Table>
+        <TableHeader>
+          {table.getHeaderGroups().map((headerGroup) => (
+            <TableRow key={headerGroup.id}>
+              {headerGroup.headers.map((header) => (
+                <TableHead key={header.id}>
+                  {header.isPlaceholder
+                    ? null
+                    : flexRender(
+                        header.column.columnDef.header,
+                        header.getContext()
+                      )}
+                </TableHead>
+              ))}
+            </TableRow>
+          ))}
+        </TableHeader>
+        <TableBody>
+          {table.getRowModel().rows.map((row) => (
+            <TableRow
+              key={row.id}
+              className="cursor-pointer hover:bg-muted/50"
+              onClick={() => setSelectedEvent(row.original)}
+            >
+              {row.getVisibleCells().map((cell) => (
+                <TableCell key={cell.id}>
+                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                </TableCell>
+              ))}
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+
+      <Dialog
+        open={!!selectedEvent}
+        onOpenChange={(open) => !open && setSelectedEvent(null)}
+      >
+        <DialogContent className="max-h-[80vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Event payload</DialogTitle>
+          </DialogHeader>
+          {selectedEvent && (
+            <pre className="flex-1 overflow-auto rounded bg-muted p-4 text-xs">
+              {JSON.stringify(
+                {
+                  ts: selectedEvent.ts,
+                  level: selectedEvent.level,
+                  stream_id: selectedEvent.stream_id,
+                  entity: selectedEvent.entity,
+                  type: selectedEvent.type,
+                  message: selectedEvent.message,
+                  request_id: selectedEvent.request_id,
+                  payload: selectedEvent.payload,
+                },
+                null,
+                2
+              )}
+            </pre>
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 }

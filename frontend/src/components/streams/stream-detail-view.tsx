@@ -2,16 +2,18 @@
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
+import { toast } from "sonner";
 import { fetchStream, streamStart, streamStop } from "@/lib/api";
 import { streamDetailQueryOptions } from "@/lib/query/query-client";
 import type { Stream } from "@/lib/api/types";
 import { StreamStatusBadge } from "./stream-status-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { EventsTable } from "@/components/events/events-table";
 
 export function StreamDetailView({ streamId }: { streamId: string }) {
   const queryClient = useQueryClient();
-  const { data: stream, isLoading, error } = useQuery({
+  const { data: stream, isLoading, error, refetch } = useQuery({
     ...streamDetailQueryOptions(streamId),
     queryFn: () => fetchStream(streamId),
   });
@@ -27,8 +29,10 @@ export function StreamDetailView({ streamId }: { streamId: string }) {
       });
       await queryClient.invalidateQueries({ queryKey: ["streams", streamId] });
       await queryClient.invalidateQueries({ queryKey: ["streams"] });
+      toast.success(`Stream ${streamId} start requested`);
     } catch (e) {
-      console.error(e);
+      const msg = e instanceof Error ? e.message : "Start failed";
+      toast.error(msg);
     }
   }
 
@@ -37,8 +41,28 @@ export function StreamDetailView({ streamId }: { streamId: string }) {
       await streamStop(streamId);
       await queryClient.invalidateQueries({ queryKey: ["streams", streamId] });
       await queryClient.invalidateQueries({ queryKey: ["streams"] });
+      toast.success(`Stream ${streamId} stop requested`);
     } catch (e) {
-      console.error(e);
+      const msg = e instanceof Error ? e.message : "Stop failed";
+      toast.error(msg);
+    }
+  }
+
+  async function handleRetry() {
+    const source_rtsp =
+      stream?.pipeline_params?.source_rtsp?.trim() || "rtsp://example/stream";
+    try {
+      await streamStart({
+        channel_id: streamId,
+        source_rtsp,
+        output: stream?.pipeline_params?.output ?? "hls",
+      });
+      await queryClient.invalidateQueries({ queryKey: ["streams", streamId] });
+      await queryClient.invalidateQueries({ queryKey: ["streams"] });
+      toast.success(`Stream ${streamId} retry requested`);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Retry failed";
+      toast.error(msg);
     }
   }
 
@@ -47,7 +71,10 @@ export function StreamDetailView({ streamId }: { streamId: string }) {
       <Card className="border-destructive/50">
         <CardContent className="pt-6">
           <p className="text-destructive">Failed to load stream: {error.message}</p>
-          <Link href="/streams" className="mt-2 inline-block text-primary hover:underline">
+          <Button variant="outline" size="sm" className="mt-2" onClick={() => refetch()}>
+            Retry
+          </Button>
+          <Link href="/streams" className="mt-2 ml-2 inline-block text-primary hover:underline">
             ← Back to list
           </Link>
         </CardContent>
@@ -69,6 +96,7 @@ export function StreamDetailView({ streamId }: { streamId: string }) {
   const isRunning = stream.status === "RUNNING";
   const isStopped =
     stream.status === "STOPPED" || stream.status === "CREATED";
+  const isFailed = stream.status === "FAILED";
   const canStart = isStopped && stream.pipeline_params?.source_rtsp;
 
   return (
@@ -85,12 +113,15 @@ export function StreamDetailView({ streamId }: { streamId: string }) {
           <StreamStatusBadge status={stream.status} className="mt-2" />
         </div>
         <div className="flex gap-2">
-          {canStart && (
-            <Button onClick={handleStart}>Start</Button>
-          )}
+          {canStart && <Button onClick={handleStart}>Start</Button>}
           {isRunning && (
             <Button variant="destructive" onClick={handleStop}>
               Stop
+            </Button>
+          )}
+          {isFailed && (
+            <Button variant="secondary" onClick={handleRetry}>
+              Retry
             </Button>
           )}
         </div>
@@ -132,6 +163,35 @@ export function StreamDetailView({ streamId }: { streamId: string }) {
           Set pipeline_params.source_rtsp via API PATCH to enable Start.
         </p>
       )}
+
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>Recent events</CardTitle>
+          <Link
+            href="/events"
+            className="text-sm text-primary hover:underline"
+          >
+            View all →
+          </Link>
+        </CardHeader>
+        <CardContent>
+          <EventsTable streamId={streamId} limit={20} embed />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Related jobs</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Link
+            href={`/jobs?stream_id=${encodeURIComponent(streamId)}`}
+            className="text-primary hover:underline"
+          >
+            Jobs for this stream →
+          </Link>
+        </CardContent>
+      </Card>
     </div>
   );
 }

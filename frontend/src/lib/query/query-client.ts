@@ -15,14 +15,16 @@ export const queryClient = new QueryClient({
   },
 });
 
+/** streams/jobs/workers: 2s */
 export const streamListQueryOptions = {
   queryKey: ["streams"] as const,
   refetchInterval: POLL_MS,
 };
 
+/** detail: 1~2s */
 export const streamDetailQueryOptions = (id: string) => ({
   queryKey: ["streams", id] as const,
-  refetchInterval: POLL_MS,
+  refetchInterval: Math.min(POLL_MS, 1500),
 });
 
 export const jobsQueryOptions = {
@@ -35,7 +37,13 @@ export const workersQueryOptions = {
   refetchInterval: POLL_MS,
 };
 
-export const eventsQueryOptions = (params?: { stream_id?: string; limit?: number }) => ({
+/** events: 3~5s */
+export const eventsQueryOptions = (params?: {
+  stream_id?: string;
+  limit?: number;
+  level?: string;
+  type?: string;
+}) => ({
   queryKey: ["events", params] as const,
   refetchInterval: Math.min(POLL_MS * 2, 5000),
 });
