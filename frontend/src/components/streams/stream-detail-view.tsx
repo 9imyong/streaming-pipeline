@@ -8,9 +8,14 @@ import { Loader2 } from "lucide-react";
 import { fetchStream, streamStart, streamStop } from "@/lib/api";
 import { ApiError } from "@/lib/api/client";
 import { streamDetailQueryOptions } from "@/lib/query/query-client";
+import { useEventsRealtime } from "@/lib/realtime/use-events-realtime";
+import { getRole, canRunStreamCommands } from "@/lib/storage/settings";
 import type { Stream } from "@/lib/api/types";
 import { StreamStatusBadge } from "./stream-status-badge";
 import { StreamPlayer } from "./stream-player";
+import { FailedStreamDiagnostics } from "./failed-stream-diagnostics";
+import { StreamStateTimeline } from "./stream-state-timeline";
+import { CommandAuditTrail } from "./command-audit-trail";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EventsTable } from "@/components/events/events-table";
@@ -35,6 +40,13 @@ export function StreamDetailView({ streamId }: { streamId: string }) {
     queryFn: () => fetchStream(streamId),
   });
 
+  const { events: streamEvents } = useEventsRealtime({
+    stream_id: streamId,
+    limit: 50,
+    useSse: true,
+    toastOnLevel: false,
+  });
+
   async function handleStart() {
     const source_rtsp =
       stream?.pipeline_params?.source_rtsp?.trim() || "rtsp://example/stream";
@@ -56,7 +68,12 @@ export function StreamDetailView({ streamId }: { streamId: string }) {
   }
 
   async function handleStop() {
-    if (!window.confirm(`Stop stream "${streamId}"?`)) return;
+    if (
+      !window.confirm(
+        `Stop stream "${streamId}"?\n\n영상 전송이 중단되며, HLS 미리보기도 끊깁니다. 필요 시 다시 Start 하세요.`
+      )
+    )
+      return;
     setCommandLoading("stop");
     try {
       await streamStop(streamId);
@@ -124,6 +141,7 @@ export function StreamDetailView({ streamId }: { streamId: string }) {
     stream.status === "STOPPED" || stream.status === "CREATED";
   const isFailed = stream.status === "FAILED";
   const canStart = isStopped && stream.pipeline_params?.source_rtsp;
+  const canRunCommands = canRunStreamCommands(getRole());
 
   return (
     <div className="space-y-6">
@@ -139,10 +157,11 @@ export function StreamDetailView({ streamId }: { streamId: string }) {
           <StreamStatusBadge status={stream.status} className="mt-2" />
         </div>
         <div className="flex gap-2">
-          {canStart && (
+          {canRunCommands && canStart && (
             <Button
               onClick={handleStart}
               disabled={anyCommandLoading}
+              title="Source RTSP가 설정된 STOPPED/CREATED 상태에서만 가능"
             >
               {commandLoading === "start" ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -151,11 +170,12 @@ export function StreamDetailView({ streamId }: { streamId: string }) {
               )}
             </Button>
           )}
-          {isRunning && (
+          {canRunCommands && isRunning && (
             <Button
               variant="destructive"
               onClick={handleStop}
               disabled={anyCommandLoading}
+              title="RUNNING 스트림 중단. 영상 전송·HLS 미리보기 중단됨"
             >
               {commandLoading === "stop" ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -164,11 +184,12 @@ export function StreamDetailView({ streamId }: { streamId: string }) {
               )}
             </Button>
           )}
-          {isFailed && (
+          {canRunCommands && isFailed && (
             <Button
               variant="secondary"
               onClick={handleRetry}
               disabled={anyCommandLoading}
+              title="FAILED 상태에서만 Retry 가능. 동일 설정으로 재시작"
             >
               {commandLoading === "retry" ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -217,12 +238,34 @@ export function StreamDetailView({ streamId }: { streamId: string }) {
         </p>
       )}
 
+      {isFailed && (
+        <FailedStreamDiagnostics stream={stream} events={streamEvents} />
+      )}
+
+      <Card>
+        <CardHeader>
+          <CardTitle>State Timeline</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <StreamStateTimeline events={streamEvents} />
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle>HLS Preview</CardTitle>
         </CardHeader>
         <CardContent>
           <StreamPlayer streamId={streamId} playPrompt="Click to play" />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Command History</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <CommandAuditTrail events={streamEvents} limit={15} />
         </CardContent>
       </Card>
 
