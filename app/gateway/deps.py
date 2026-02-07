@@ -8,6 +8,7 @@ from fastapi import Depends, Request
 from app.application.dto import StartStreamResult, StreamStatusResult
 from app.application.ports.command_bus import CommandBus
 from app.application.ports.job_repository import JobRepository
+from app.application.ports.observability_reader import ObservabilityReader
 from app.application.ports.stream_repository import StreamRepository
 from app.application.usecases.create_stream import create_stream
 from app.application.usecases.get_stream import get_stream
@@ -121,3 +122,11 @@ def get_get_stream_use_case(
 ) -> GetStreamRunner:
     """GET /v1/streams/{channel_id} 에서 사용."""
     return GetStreamRunner(stream_repo)
+
+
+def get_observability_reader(request: Request) -> ObservabilityReader:
+    """관측성 읽기. lifespan에서 설정 필수."""
+    reader = getattr(request.app.state, "observability_reader", None)
+    if reader is None:
+        raise RuntimeError("observability_reader not set on app.state (wire in lifespan)")
+    return reader

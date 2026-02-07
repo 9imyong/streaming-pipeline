@@ -28,29 +28,47 @@ def _init_gst() -> None:
         ) from e
 
 
+def _overlay_segment(overlay_mode: Optional[str], overlay_label: Optional[str]) -> str:
+    """
+    overlay_mode=NONE|SIMPLE|OSD 에 따른 파이프라인 세그먼트.
+    - NONE: 없음.
+    - SIMPLE: textoverlay로 라벨/카운트 표시.
+    - OSD: 메타데이터 주입 훅(고정). 구현체는 timeoverlay 등 교체 가능.
+    """
+    mode = (overlay_mode or "NONE").upper()
+    if mode == "NONE":
+        return ""
+    if mode == "SIMPLE":
+        text = (overlay_label or "stream").replace('"', '\\"')[:64]
+        return f'textoverlay text="{text}" valignment=top halignment=left ! '
+    if mode == "OSD":
+        # 고정 훅: timeoverlay 등. 플러그인 교체 시 이 한 줄만 변경.
+        return "timeoverlay valignment=top halignment=left ! "
+    return ""
+
+
 def _build_pipeline_descriptor(spec: StreamSpec) -> str:
-    """최소 동작: videotestsrc -> x264enc -> fakesink. spec에 따라 hlssink2 등 확장 가능."""
+    """최소 동작: videotestsrc -> [overlay] -> x264enc -> fakesink. overlay_mode에 따라 NONE|SIMPLE|OSD."""
     params = spec.params or {}
     output_type = (spec.output_type or "fakesink").lower()
     channel_id = spec.channel_id
+    overlay_mode = params.get("overlay_mode")
+    overlay_label = params.get("overlay_label")
+    overlay = _overlay_segment(overlay_mode, overlay_label)
+    video_head = "videotestsrc ! video/x-raw,framerate=25/1 ! "
+    encode_tail = "x264enc tune=zerolatency speed-preset=1 ! "
 
     if output_type == "hls":
-        # hlssink2 사용 시 경로 필요 (선택)
         import os
         out_dir = params.get("output_path") or f"/tmp/hls/{channel_id}"
         os.makedirs(out_dir, exist_ok=True)
         seg = os.path.join(out_dir, "seg%05d.ts")
         return (
-            "videotestsrc ! video/x-raw,framerate=25/1 ! "
-            "x264enc tune=zerolatency speed-preset=1 ! "
-            "mpegtsmux ! hlssink2 target-duration=2 playlist-length=3 "
+            video_head + overlay + encode_tail
+            + "mpegtsmux ! hlssink2 target-duration=2 playlist-length=3 "
             f"location={seg}"
         )
-    # 기본: fakesink
-    return (
-        "videotestsrc ! video/x-raw,framerate=25/1 ! "
-        "x264enc tune=zerolatency speed-preset=1 ! fakesink sync=true"
-    )
+    return video_head + overlay + encode_tail + "fakesink sync=true"
 
 
 class _GstPipelineHandle:

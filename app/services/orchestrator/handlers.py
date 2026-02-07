@@ -10,6 +10,7 @@ from typing import Any, Callable
 from app.application.ports.lease_store import LeaseStore
 from app.application.ports.stream_repository import StreamRepository
 from app.domain.stream_state_machine import StreamState, DesiredState, validate_transition
+from app.infrastructure.logging.stream_extra import stream_log_extra
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +61,12 @@ async def handle_start(
     if not ok:
         expires = datetime.now(timezone.utc) + timedelta(seconds=LEASE_TTL_SECONDS)
         await stream_repo.set_assigned_worker(channel_id, worker_id, expires)
-    logger.info("handle_start assigned channel_id=%s worker_id=%s", channel_id, worker_id)
+    logger.info(
+        "handle_start assigned channel_id=%s worker_id=%s",
+        channel_id,
+        worker_id,
+        extra=stream_log_extra(channel_id, worker_id, "assigned"),
+    )
 
 
 async def handle_stop(
@@ -83,7 +89,12 @@ async def handle_stop(
     worker_id = row.get("assigned_worker_id")
     if worker_id:
         await lease_store.release(channel_id, worker_id)
-        logger.info("handle_stop released lease channel_id=%s worker_id=%s", channel_id, worker_id)
+        logger.info(
+            "handle_stop released lease channel_id=%s worker_id=%s",
+            channel_id,
+            worker_id,
+            extra=stream_log_extra(channel_id, worker_id, "stopped"),
+        )
 
     current = (row or {}).get("status") or StreamState.PENDING.value
     await stream_repo.transition_status(channel_id, current, StreamState.STOPPED.value)

@@ -13,7 +13,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
-from app.gateway.routes import health, streams
+from app.gateway.routes import health, observability, streams
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -27,8 +27,10 @@ async def lifespan(app: FastAPI):
     from app.infrastructure.persistence.job_repository import DbJobRepository
 
     settings = get_settings()
+    from app.infrastructure.persistence.observability_reader import DbObservabilityReader
     app.state.stream_repository = DbStreamRepository()
     app.state.job_repository = DbJobRepository()
+    app.state.observability_reader = DbObservabilityReader()
 
     if settings.command_bus == "stub":
         from app.infrastructure.messaging.command_bus_stub import StubCommandBus
@@ -54,6 +56,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="streaming-pipeline-gateway", version="0.1.0", lifespan=lifespan)
 app.include_router(streams.router, prefix="/v1")
+app.include_router(observability.router, prefix="/v1")
 app.include_router(health.router)
 
 

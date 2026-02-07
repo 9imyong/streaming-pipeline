@@ -21,6 +21,7 @@ from app.application.ports.stream_repository import StreamRepository
 from app.infrastructure.messaging.kafka.schemas import stream_event_payload
 from app.infrastructure.messaging.kafka.topics import STREAM_EVENTS
 from app.services.worker_stream.backoff import next_delay, should_stop_restarting
+from app.infrastructure.logging.stream_extra import stream_log_extra
 
 logger = logging.getLogger(__name__)
 
@@ -169,7 +170,12 @@ class StreamProcessManager:
         try:
             proc = await self.runner.spawn(spec)
         except Exception as e:
-            logger.exception("spawn failed channel_id=%s: %s", spec.channel_id, e)
+            logger.exception(
+                "spawn failed channel_id=%s: %s",
+                spec.channel_id,
+                e,
+                extra=stream_log_extra(spec.channel_id, self.worker_id, "FAILED", 0),
+            )
             await self.stream_repo.set_last_error(spec.channel_id, str(e))
             await self.event_publisher.stream_event("FAILED", spec.channel_id, self.worker_id, message=str(e))
             return
@@ -221,7 +227,11 @@ class StreamProcessManager:
             for channel_id in list(self._procs.keys()):
                 renewed = await self.lease_store.renew(channel_id, self.worker_id, self.lease_ttl_seconds)
                 if not renewed:
-                    logger.warning("lease renew failed channel_id=%s stopping", channel_id)
+                    logger.warning(
+                        "lease renew failed channel_id=%s stopping",
+                        channel_id,
+                        extra=stream_log_extra(channel_id, self.worker_id, "lease_lost"),
+                    )
                     await self.stop_stream(channel_id, reason="lease_lost")
 
     async def _watch_processes_loop(self) -> None:
@@ -262,7 +272,11 @@ class StreamProcessManager:
                     with contextlib.suppress(Exception):
                         await self.lease_store.release(channel_id, self.worker_id)
                     self._procs.pop(channel_id, None)
-                    logger.info("channel_id=%s pipeline exited normally exit_code=0", channel_id)
+                    logger.info(
+                        "channel_id=%s pipeline exited normally exit_code=0",
+                        channel_id,
+                        extra=stream_log_extra(channel_id, self.worker_id, "STOPPED", handle.restart_count),
+                    )
                     continue
 
                 # 비정상 종료: FAILED 발행(러너가 안 했을 때만) 후 재시작 로직
@@ -276,6 +290,13 @@ class StreamProcessManager:
                         message=err_msg,
                         last_error=stderr_snippet[:1024] if stderr_snippet else None,
                     )
+                logger.warning(
+                    "pipeline failed channel_id=%s exit_code=%s restart_count=%s",
+                    channel_id,
+                    proc.returncode,
+                    handle.restart_count + 1,
+                    extra=stream_log_extra(channel_id, self.worker_id, "FAILED", handle.restart_count + 1, exit_code=proc.returncode),
+                )
 
                 handle.restart_count += 1
                 await self.stream_repo.increment_restart_count(channel_id)
@@ -287,10 +308,22 @@ class StreamProcessManager:
                         "FAILED", channel_id, self.worker_id,
                         message=f"max_restarts exceeded ({handle.restart_count})",
                     )
+                    logger.warning(
+                        "max_restarts exceeded channel_id=%s restart_count=%s",
+                        channel_id,
+                        handle.restart_count,
+                        extra=stream_log_extra(channel_id, self.worker_id, "FAILED", handle.restart_count),
+                    )
                     await self.stop_stream(channel_id, reason="max_restart_exceeded")
                     continue
                 delay = next_delay(handle.restart_count)
-                logger.info("restart channel_id=%s attempt=%s delay=%.1fs", channel_id, handle.restart_count, delay)
+                logger.info(
+                    "restart channel_id=%s attempt=%s delay=%.1fs",
+                    channel_id,
+                    handle.restart_count,
+                    delay,
+                    extra=stream_log_extra(channel_id, self.worker_id, "restart", handle.restart_count),
+                )
                 await asyncio.sleep(delay)
                 row = await self.stream_repo.get(channel_id)
                 if not _is_lease_valid(row, self.worker_id):
