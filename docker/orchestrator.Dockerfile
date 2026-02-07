@@ -1,11 +1,11 @@
-# ========== 빌드 스테이지: uv로 휠만 다운로드 ==========
+# ========== 빌드 스테이지: uv로 휠만 다운로드 (PyGObject 제외) ==========
 FROM python:3.11-slim AS builder
 WORKDIR /build
 
 RUN pip install --no-cache-dir uv
 
-COPY pyproject.toml ./
-RUN uv pip compile pyproject.toml -o requirements.lock \
+COPY docker/orchestrator-requirements.in ./
+RUN uv pip compile orchestrator-requirements.in -o requirements.lock \
     && pip download -d /wheelhouse -r requirements.lock
 
 COPY app/ ./app/
