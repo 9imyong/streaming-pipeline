@@ -154,10 +154,13 @@ services:
         NEXT_PUBLIC_HLS_BASE_URL: http://localhost/hls
     image: streaming-web:latest
     container_name: streaming-web
+    
     ports:
       - "3000:3000"
     depends_on:
       - api
+    volumes: 
+      - ../frontend:/app/app:ro
 
   kafka:
     image: apache/kafka:latest
