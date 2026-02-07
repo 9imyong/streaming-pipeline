@@ -17,6 +17,7 @@ dependencies = [
     "aiofiles",
     "aiokafka",
     "PyGObject>=3.42",  # Stream Worker Python Gst 파이프라인 (시스템 GStreamer 1.0 + gir 필요)
+    "prometheus-client>=0.19",
 ]
 
 [project.optional-dependencies]

@@ -1,0 +1,9 @@
+# Worker 전용. PyGObject/pycairo/gi 관련 pip 패키지 없음 → gi는 apt(python3-gi)로만 제공.
+# Worker 실행 최소: kafka client, config, DB driver
+
+python-dotenv>=0.20.0
+pydantic-settings
+pymysql
+cryptography
+aiokafka
+prometheus-client>=0.19

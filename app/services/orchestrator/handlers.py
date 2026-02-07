@@ -61,11 +61,12 @@ async def handle_start(
     if not ok:
         expires = datetime.now(timezone.utc) + timedelta(seconds=LEASE_TTL_SECONDS)
         await stream_repo.set_assigned_worker(channel_id, worker_id, expires)
+    command_id = payload.get("command_id")
     logger.info(
         "handle_start assigned channel_id=%s worker_id=%s",
         channel_id,
         worker_id,
-        extra=stream_log_extra(channel_id, worker_id, "assigned"),
+        extra=stream_log_extra(channel_id, worker_id, "assigned", command_id=command_id),
     )
 
 
@@ -89,11 +90,12 @@ async def handle_stop(
     worker_id = row.get("assigned_worker_id")
     if worker_id:
         await lease_store.release(channel_id, worker_id)
+        command_id = payload.get("command_id")
         logger.info(
             "handle_stop released lease channel_id=%s worker_id=%s",
             channel_id,
             worker_id,
-            extra=stream_log_extra(channel_id, worker_id, "stopped"),
+            extra=stream_log_extra(channel_id, worker_id, "stopped", command_id=command_id),
         )
 
     current = (row or {}).get("status") or StreamState.PENDING.value
