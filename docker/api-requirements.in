@@ -1,0 +1,12 @@
+# API(gateway) 전용. PyGObject/Celery 미포함. aiokafka는 Kafka 발행(stream.commands)용으로 필요.
+fastapi
+uvicorn[standard]
+python-dotenv>=0.20.0
+pydantic-settings
+pymysql
+cryptography
+redis
+httpx
+aiofiles
+aiokafka
+prometheus-client>=0.19
