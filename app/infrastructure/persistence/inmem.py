@@ -63,6 +63,21 @@ class InMemoryStreamRepository(StreamRepository):
         if channel_id in self._store:
             self._store[channel_id]["last_error"] = message
 
+    async def update_pipeline_params(self, channel_id: str, updates: dict) -> bool:
+        if channel_id not in self._store:
+            return False
+        current = self._store[channel_id].get("pipeline_params") or {}
+        if isinstance(current, dict):
+            current = dict(current)
+        else:
+            current = {}
+        current.update(updates)
+        self._store[channel_id]["pipeline_params"] = current
+        return True
+
+    async def delete(self, channel_id: str) -> None:
+        self._store.pop(channel_id, None)
+
 
 class InMemoryJobRepository(JobRepository):
     """Job 저장소 인메모리 구현. 테스트 전용. 운영은 DbJobRepository 사용."""

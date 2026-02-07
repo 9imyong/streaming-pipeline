@@ -127,6 +127,42 @@ class DbStreamRepository(StreamRepository):
 
         await _run_in_executor(_run)
 
+    async def update_pipeline_params(self, channel_id: str, updates: dict) -> bool:
+        # pipeline_params 일부 갱신: 기존 JSON 읽어 병합 후 저장. 채널 없으면 False
+        def _run() -> bool:
+            with get_connection() as conn:
+                with conn.cursor() as cur:
+                    cur.execute(
+                        f"SELECT pipeline_params FROM {STREAMS_TABLE} WHERE channel_id = %s",
+                        (channel_id,),
+                    )
+                    row = cur.fetchone()
+                    if not row:
+                        return False
+                    current = row.get("pipeline_params")
+                    if isinstance(current, str):
+                        current = json.loads(current) if current else {}
+                    else:
+                        current = dict(current or {})
+                    current.update(updates)
+                    params_json = json.dumps(current, ensure_ascii=False)
+                    cur.execute(
+                        f"UPDATE {STREAMS_TABLE} SET pipeline_params = %s, updated_at = NOW(3) WHERE channel_id = %s",
+                        (params_json, channel_id),
+                    )
+                    return True
+
+        return await _run_in_executor(_run)
+
+    async def delete(self, channel_id: str) -> None:
+        # 채널 삭제: 목록에서 제거. STOP 후 호출 권장.
+        def _run() -> None:
+            with get_connection() as conn:
+                with conn.cursor() as cur:
+                    cur.execute(f"DELETE FROM {STREAMS_TABLE} WHERE channel_id = %s", (channel_id,))
+
+        await _run_in_executor(_run)
+
 
 async def _run_in_executor(f):
     import asyncio

@@ -6,11 +6,13 @@ Gateway 의존성: 유스케이스 실행기만 주입.
 from fastapi import Depends, Request
 
 from app.application.dto import StartStreamResult, StreamStatusResult
+from app.application.ports.ai_latest_store import AiLatestStore
 from app.application.ports.command_bus import CommandBus
 from app.application.ports.job_repository import JobRepository
 from app.application.ports.observability_reader import ObservabilityReader
 from app.application.ports.stream_repository import StreamRepository
 from app.application.usecases.create_stream import create_stream
+from app.application.usecases.get_ai_latest import get_ai_latest
 from app.application.usecases.get_stream import get_stream
 from app.application.usecases.stop_stream import stop_stream
 
@@ -63,6 +65,9 @@ class CreateStreamRunner:
         ai_profile: str | None = None,
         overlay_mode: str | None = None,
         overlay_label: str | None = None,
+        rtsp_transport: str | None = None,
+        rtsp_latency_ms: int | None = None,
+        rtsp_timeout_ms: int | None = None,
         idempotency_key: str | None = None,
     ) -> StartStreamResult:
         return await create_stream(
@@ -75,6 +80,9 @@ class CreateStreamRunner:
             ai_profile=ai_profile,
             overlay_mode=overlay_mode,
             overlay_label=overlay_label,
+            rtsp_transport=rtsp_transport,
+            rtsp_latency_ms=rtsp_latency_ms,
+            rtsp_timeout_ms=rtsp_timeout_ms,
             idempotency_key=idempotency_key,
         )
 
@@ -100,6 +108,16 @@ class GetStreamRunner:
         return await get_stream(self._stream_repo, channel_id)
 
 
+class GetAiLatestRunner:
+    """get_ai_latest 유스케이스 실행기."""
+
+    def __init__(self, store: AiLatestStore):
+        self._store = store
+
+    async def run(self, channel_id: str) -> dict | None:
+        return await get_ai_latest(self._store, channel_id)
+
+
 def get_create_stream_use_case(
     stream_repo: StreamRepository = Depends(get_stream_repository),
     job_repo: JobRepository = Depends(get_job_repository),
@@ -122,6 +140,21 @@ def get_get_stream_use_case(
 ) -> GetStreamRunner:
     """GET /v1/streams/{channel_id} 에서 사용."""
     return GetStreamRunner(stream_repo)
+
+
+def get_ai_latest_store(request: Request) -> AiLatestStore:
+    """AI 최신 캐시. lifespan에서 설정."""
+    store = getattr(request.app.state, "ai_latest_store", None)
+    if store is None:
+        raise RuntimeError("ai_latest_store not set on app.state")
+    return store
+
+
+def get_ai_latest_runner(
+    store: AiLatestStore = Depends(get_ai_latest_store),
+) -> GetAiLatestRunner:
+    """GET /v1/streams/{channel_id}/ai/latest 에서 사용."""
+    return GetAiLatestRunner(store)
 
 
 def get_observability_reader(request: Request) -> ObservabilityReader:
