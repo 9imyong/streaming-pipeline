@@ -23,6 +23,9 @@ async def create_stream(
     ai_profile: str | None = None,
     overlay_mode: str | None = None,
     overlay_label: str | None = None,
+    rtsp_transport: str | None = None,
+    rtsp_latency_ms: int | None = None,
+    rtsp_timeout_ms: int | None = None,
     idempotency_key: str | None = None,
     job_id: str | None = None,
 ) -> StartStreamResult:
@@ -48,6 +51,12 @@ async def create_stream(
         params["overlay_mode"] = overlay_mode
     if overlay_label is not None:
         params["overlay_label"] = overlay_label
+    if rtsp_transport is not None:
+        params["rtsp_transport"] = rtsp_transport
+    if rtsp_latency_ms is not None:
+        params["rtsp_latency_ms"] = rtsp_latency_ms
+    if rtsp_timeout_ms is not None:
+        params["rtsp_timeout_ms"] = rtsp_timeout_ms
     await stream_repo.create_or_update(
         channel_id=channel_id,
         desired_state="running",

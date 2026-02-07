@@ -46,3 +46,13 @@ class StreamRepository(ABC):
     async def set_last_error(self, channel_id: str, message: str) -> None:
         """last_error 갱신."""
         ...
+
+    @abstractmethod
+    async def update_pipeline_params(self, channel_id: str, updates: dict) -> bool:
+        """pipeline_params 일부 갱신 (source_rtsp, output 등). 기존 값과 병합. 채널 없으면 False."""
+        ...
+
+    @abstractmethod
+    async def delete(self, channel_id: str) -> None:
+        """채널 레코드 삭제 (목록에서 제거). STOP 후 호출 권장."""
+        ...
