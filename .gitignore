@@ -1,26 +1,41 @@
-deploy/
-*.zip
-*.sh
-!scripts/*.sh
-*.gz
-tensorrt_folder_outputJan15
-models/
-mysql/
-*.png
-*.jpg
-*.mp4
-**/pth
-trt/
-tensorrt
+# ---------------------------------------------------------------------------
+# 주의: 여기의 패턴은 부분 문자열로 동작한다. `*test*` 같은 넓은 패턴은
+# "latest" 가 들어간 소스 파일까지 삼킨다. 실제로 ai_latest_store.py 와
+# get_ai_latest.py 가 이 방식으로 커밋되지 못했다. 확장자나 디렉터리로
+# 좁혀서 쓴다.
+# ---------------------------------------------------------------------------
+
+# 파이썬
+__pycache__/
+*.pyc
+.venv/
+
+# 환경변수·비밀
+.env
 *.env
-**/*__pycache__
-**/*.pyc
-**/*test*
-!scripts/smoke_test.sh
+!.env.example
+!**/.env.example
 
-# Cursor IDE 규칙(로컬 전용, 커밋 제외)
-.cursor/
+# 모델 가중치·엔진 (용량이 크고 재생성 가능)
+tensorrt/
+tensorrt_folder_outputJan15/
+trt/
+**/*.pth
+**/*.onnx
+**/*.engine
 
-# 의존성·빌드 산출물(어디서나 무시)
+# 런타임 데이터·산출물
+# HLS 세그먼트(.ts)는 확장자가 TypeScript 와 겹치므로 디렉터리로만 막는다.
+mysql_data/
+hls_data/
+/data/
+*.zip
+*.gz
+*.mp4
+
+# 의존성·빌드 산출물
 node_modules/
 .next/
+
+# IDE
+.cursor/
