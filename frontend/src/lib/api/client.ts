@@ -1,12 +1,16 @@
 /**
  * 공통 fetch 래퍼: baseUrl, timeout, 에러 처리, JSON 파싱
- * X-Request-ID 있으면 응답에서 활용 가능
+ * baseUrl/apiKey는 Settings(localStorage) 우선, 없으면 env
+ * X-Request-ID, x-api-key 헤더 자동 주입
  */
+import { getApiBaseUrl, getApiKey } from "@/lib/storage/settings";
+
 const DEFAULT_TIMEOUT_MS = 15_000;
 
-function getBaseUrl(): string {
+export function getBaseUrl(): string {
   if (typeof window !== "undefined") {
-    return process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
+    const stored = getApiBaseUrl();
+    if (stored?.trim()) return stored.trim();
   }
   return process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
 }
@@ -44,11 +48,16 @@ export async function apiClient<T>(
     ...headers,
   };
   if (requestId) nextHeaders["X-Request-ID"] = requestId;
+  if (typeof window !== "undefined") {
+    const apiKey = getApiKey();
+    if (apiKey?.trim()) nextHeaders["x-api-key"] = apiKey.trim();
+  }
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeout);
   const finalSignal = signal ?? controller.signal;
 
+  const start = typeof performance !== "undefined" ? performance.now() : 0;
   try {
     const res = await fetch(url, {
       ...init,
@@ -58,6 +67,19 @@ export async function apiClient<T>(
     clearTimeout(timeoutId);
 
     const responseRequestId = res.headers.get("X-Request-ID") ?? requestId;
+    const durationMs =
+      typeof performance !== "undefined"
+        ? Math.round(performance.now() - start)
+        : 0;
+    if (
+      typeof window !== "undefined" &&
+      process.env.NODE_ENV === "development" &&
+      responseRequestId
+    ) {
+      console.debug(
+        `[API] ${res.status} ${path} request_id=${responseRequestId} duration_ms=${durationMs}`
+      );
+    }
     const text = await res.text();
     let data: T;
     try {

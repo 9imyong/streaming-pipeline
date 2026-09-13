@@ -1,10 +1,13 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { getRole, canEditSettings } from "@/lib/storage/settings";
 import {
   LayoutDashboard,
+  Video,
   Radio,
   Briefcase,
   Cpu,
@@ -13,8 +16,9 @@ import {
   Settings,
 } from "lucide-react";
 
-const navItems = [
+const allNavItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/sources", label: "Sources", icon: Video },
   { href: "/streams", label: "Streams", icon: Radio },
   { href: "/jobs", label: "Jobs", icon: Briefcase },
   { href: "/workers", label: "Workers", icon: Cpu },
@@ -25,6 +29,14 @@ const navItems = [
 
 export function SideNav() {
   const pathname = usePathname();
+  const [canSettings, setCanSettings] = useState(false);
+  useEffect(() => {
+    setCanSettings(canEditSettings(getRole()));
+  }, []);
+
+  const navItems = allNavItems.filter(
+    (item) => item.href !== "/settings" || canSettings
+  );
 
   return (
     <aside className="flex h-full w-56 flex-col border-r border-border bg-card">

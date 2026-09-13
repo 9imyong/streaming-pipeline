@@ -1,4 +1,8 @@
+import { ApiError } from "./client";
 import type {
+  Source,
+  SourceCreateBody,
+  SourcePatchBody,
   Stream,
   StreamListItem,
   Job,
@@ -6,6 +10,31 @@ import type {
   StreamEvent,
   MetricsSummary,
 } from "./types";
+
+export const mockSources: Source[] = [
+  {
+    source_id: "src-01",
+    name: "입구 카메라",
+    rtsp_url: "rtsp://210.99.70.120:1935/live/cctv001.stream",
+    enabled: true,
+    location: "천안 동서 타워",
+    updated_at: new Date().toISOString(),
+  },
+  {
+    source_id: "src-02",
+    name: "주차장 A",
+    rtsp_url: "rtsp://210.99.70.120:1935/live/cctv002.stream",
+    enabled: true,
+    updated_at: new Date().toISOString(),
+  },
+  {
+    source_id: "src-03",
+    name: "비활성 카메라",
+    rtsp_url: "rtsp://210.99.70.120:1935/live/cctv003.stream",
+    enabled: false,
+    updated_at: new Date(Date.now() - 86400_000).toISOString(),
+  },
+];
 
 export const mockStreamList: StreamListItem[] = [
   {
@@ -72,6 +101,7 @@ export const mockJobs: Job[] = [
     stream_id: "ch-01",
     type: "inference",
     status: "DONE",
+    duration_ms: 120,
     created_at: new Date(Date.now() - 60_000).toISOString(),
     updated_at: new Date().toISOString(),
   },
@@ -84,6 +114,19 @@ export const mockJobs: Job[] = [
     created_at: new Date(Date.now() - 30_000).toISOString(),
     updated_at: new Date().toISOString(),
   },
+  {
+    id: "j3",
+    job_id: "job-003",
+    stream_id: "ch-03",
+    type: "stream",
+    status: "FAILED",
+    failure_reason: "Connection refused",
+    error_code: "ECONNREFUSED",
+    error_message: "Connection refused",
+    payload: { channel_id: "ch-03", source_rtsp: "rtsp://example/3" },
+    created_at: new Date(Date.now() - 120_000).toISOString(),
+    updated_at: new Date().toISOString(),
+  },
 ];
 
 export const mockWorkers: Worker[] = [
@@ -92,6 +135,7 @@ export const mockWorkers: Worker[] = [
     worker_id: "worker-stream-1",
     status: "BUSY",
     current_streams: 1,
+    current_streams_count: 1,
     last_seen: new Date().toISOString(),
   },
   {
@@ -99,24 +143,42 @@ export const mockWorkers: Worker[] = [
     worker_id: "worker-stream-2",
     status: "IDLE",
     current_streams: 0,
+    current_streams_count: 0,
     last_seen: new Date().toISOString(),
+  },
+  {
+    id: "w3",
+    worker_id: "worker-stream-3",
+    status: "DOWN",
+    current_streams: 0,
+    last_seen: new Date(Date.now() - 60_000).toISOString(),
   },
 ];
 
 export const mockEvents: StreamEvent[] = [
   {
     ts: new Date().toISOString(),
-    level: "info",
+    level: "INFO",
     stream_id: "ch-01",
-    type: "stream.started",
+    type: "STATE_CHANGED",
     message: "Pipeline started",
+    payload: { from: "STOPPED", to: "RUNNING" },
   },
   {
     ts: new Date(Date.now() - 5000).toISOString(),
-    level: "warn",
+    level: "ERROR",
     stream_id: "ch-03",
-    type: "stream.error",
+    entity: { job_id: "job-003" },
+    type: "COMMAND_SENT",
     message: "Connection refused",
+    payload: { error: "ECONNREFUSED", detail: "Connection refused" },
+  },
+  {
+    ts: new Date(Date.now() - 10_000).toISOString(),
+    level: "WARN",
+    stream_id: "ch-03",
+    type: "ASSIGNED",
+    message: "Worker lost",
   },
 ];
 
@@ -125,6 +187,10 @@ export const mockMetricsSummary: MetricsSummary = {
   failed_streams: 1,
   queued_jobs: 1,
   active_workers: 2,
+  active_streams: 1,
+  jobs_rate: 12,
+  p95_latency_ms: 150,
+  error_rate: 0.02,
 };
 
 function delay(ms: number): Promise<void> {
@@ -141,9 +207,23 @@ export async function mockFetchStream(id: string): Promise<Stream | null> {
   return mockStreamDetails[id] ?? mockStreamDetails["ch-01"] ?? null;
 }
 
-export async function mockFetchJobs(): Promise<Job[]> {
+export async function mockFetchJobs(params?: {
+  stream_id?: string;
+  status?: string;
+  limit?: number;
+}): Promise<Job[]> {
   await delay(300);
-  return [...mockJobs];
+  let list = [...mockJobs];
+  if (params?.stream_id) {
+    list = list.filter((j) => j.stream_id === params.stream_id);
+  }
+  if (params?.status) {
+    list = list.filter((j) => j.status === params.status);
+  }
+  if (params?.limit != null) {
+    list = list.slice(0, params.limit);
+  }
+  return list;
 }
 
 export async function mockFetchJob(id: string): Promise<Job | null> {
@@ -156,15 +236,123 @@ export async function mockFetchWorkers(): Promise<Worker[]> {
   return [...mockWorkers];
 }
 
-export async function mockFetchEvents(_params?: {
+export async function mockFetchEvents(params?: {
   stream_id?: string;
   limit?: number;
+  level?: string;
+  type?: string;
 }): Promise<StreamEvent[]> {
   await delay(300);
-  return [...mockEvents];
+  let list = [...mockEvents];
+  if (params?.stream_id) {
+    list = list.filter((e) => e.stream_id === params.stream_id);
+  }
+  if (params?.level) {
+    list = list.filter((e) => e.level === params.level);
+  }
+  if (params?.type) {
+    list = list.filter((e) => e.type === params.type);
+  }
+  if (params?.limit != null) {
+    list = list.slice(0, params.limit);
+  }
+  return list;
 }
 
 export async function mockFetchMetricsSummary(): Promise<MetricsSummary> {
   await delay(200);
   return { ...mockMetricsSummary };
+}
+
+// Sources: mutable list for create/update mock
+let mockSourcesData: Source[] = [...mockSources];
+
+export async function mockFetchSources(params?: {
+  enabled?: boolean;
+  q?: string;
+  limit?: number;
+  offset?: number;
+}): Promise<Source[]> {
+  await delay(300);
+  let list = [...mockSourcesData];
+  if (params?.enabled !== undefined) {
+    list = list.filter((s) => s.enabled === params.enabled);
+  }
+  if (params?.q?.trim()) {
+    const q = params.q.toLowerCase().trim();
+    list = list.filter(
+      (s) =>
+        s.name.toLowerCase().includes(q) ||
+        s.rtsp_url.toLowerCase().includes(q)
+    );
+  }
+  const offset = params?.offset ?? 0;
+  const limit = params?.limit ?? 100;
+  return list.slice(offset, offset + limit);
+}
+
+export async function mockFetchSource(id: string): Promise<Source | null> {
+  await delay(200);
+  return mockSourcesData.find((s) => s.source_id === id) ?? null;
+}
+
+export async function mockCreateSource(
+  body: SourceCreateBody
+): Promise<Source> {
+  await delay(400);
+  const existing = mockSourcesData.find(
+    (s) => s.rtsp_url === body.rtsp_url.trim()
+  );
+  if (existing) {
+    throw new ApiError("Source with same rtsp_url already exists", 409);
+  }
+  const source: Source = {
+    source_id: `src-${Date.now()}`,
+    name: body.name.trim(),
+    rtsp_url: body.rtsp_url.trim(),
+    enabled: body.enabled ?? true,
+    location: body.location?.trim() || null,
+    description: body.description?.trim() || null,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  };
+  mockSourcesData.push(source);
+  return source;
+}
+
+export async function mockUpdateSource(
+  id: string,
+  body: SourcePatchBody
+): Promise<Source> {
+  await delay(300);
+  const idx = mockSourcesData.findIndex((s) => s.source_id === id);
+  if (idx === -1) {
+    throw new ApiError("Source not found", 404);
+  }
+  const cur = mockSourcesData[idx];
+  mockSourcesData[idx] = {
+    ...cur,
+    ...(body.name !== undefined && { name: body.name }),
+    ...(body.rtsp_url !== undefined && { rtsp_url: body.rtsp_url }),
+    ...(body.location !== undefined && { location: body.location }),
+    ...(body.description !== undefined && { description: body.description }),
+    ...(body.enabled !== undefined && { enabled: body.enabled }),
+    updated_at: new Date().toISOString(),
+  };
+  return mockSourcesData[idx];
+}
+
+export async function mockValidateSource(id: string): Promise<{ ok: boolean; message?: string }> {
+  await delay(500);
+  const s = mockSourcesData.find((x) => x.source_id === id);
+  if (!s) return { ok: false, message: "Source not found" };
+  return { ok: true };
+}
+
+export async function mockCreateStreamFromSource(
+  _sourceId: string,
+  _body: { mode: "start" | "create_only"; profile?: "main" | "low" }
+): Promise<{ stream_id?: string }> {
+  await delay(400);
+  return { stream_id: `ch-${Date.now()}` };
 }

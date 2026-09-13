@@ -20,3 +20,7 @@ tensorrt
 
 # Cursor IDE 규칙(로컬 전용, 커밋 제외)
 .cursor/
+
+# 의존성·빌드 산출물(어디서나 무시)
+node_modules/
+.next/

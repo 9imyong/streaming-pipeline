@@ -81,9 +81,18 @@ streaming-platform/
 ├── docker/                  # 서비스별 Dockerfile
 ├── deployments/k8s/         # KIND / Kubernetes 배포 YAML
 ├── scripts/                 # 로컬/KIND 자동화 스크립트
+├── frontend/                # Next.js 운영 콘솔 (Streams/Jobs/Workers/Events/Metrics)
 └── README.md
 ```
 
+
+### 4.1 Frontend (운영 콘솔)
+
+- **경로**: `frontend/` (Next.js 14, App Router)
+- **역할**: Streams·Jobs·Workers·Events·Metrics 조회, 스트림 Start/Stop/Retry, HLS 미리보기, FAILED 진단, State Timeline, Command History
+- **실행**: `cd frontend && npm install && npm run dev` (개발), `docker compose -f docker/docker-compose.yml up web` (이미지)
+- **설정**: `/settings`에서 API Base URL, API Key, Poll interval, Role(VIEWER/OPERATOR/ADMIN Mock)
+- **운영 가이드**: **[docs/frontend-operations.md](docs/frontend-operations.md)** — 화면별 사용법, 장애 시 확인 순서, 자주 보는 화면
 
 ---
 

@@ -1,19 +1,23 @@
 "use client";
 
 import Link from "next/link";
-import { useQuery } from "@tanstack/react-query";
+import { useMemo, useState, useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   type ColumnDef,
   getCoreRowModel,
   useReactTable,
   flexRender,
 } from "@tanstack/react-table";
-import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { fetchStreams, streamStart, streamStop } from "@/lib/api";
 import { streamListQueryOptions } from "@/lib/query/query-client";
-import type { StreamListItem } from "@/lib/api/types";
+import { getRole, canRunStreamCommands } from "@/lib/storage/settings";
+import type { StreamListItem, StreamStatus } from "@/lib/api/types";
 import { StreamStatusBadge } from "./stream-status-badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -22,6 +26,18 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { ErrorState } from "@/components/common/error";
+import { EmptyState } from "@/components/common/empty";
+import { LoadingTable } from "@/components/common/loading";
+
+const STATUS_OPTIONS: { value: string; label: string }[] = [
+  { value: "", label: "All" },
+  { value: "CREATED", label: "Created" },
+  { value: "ASSIGNED", label: "Assigned" },
+  { value: "RUNNING", label: "Running" },
+  { value: "FAILED", label: "Failed" },
+  { value: "STOPPED", label: "Stopped" },
+];
 
 const columns: ColumnDef<StreamListItem>[] = [
   {
@@ -79,6 +95,10 @@ const columns: ColumnDef<StreamListItem>[] = [
 
 function StreamRowActions({ row }: { row: StreamListItem }) {
   const queryClient = useQueryClient();
+  const [canRunCommands, setCanRunCommands] = useState(false);
+  useEffect(() => {
+    setCanRunCommands(canRunStreamCommands(getRole()));
+  }, []);
   const isRunning = row.status === "RUNNING";
   const isStopped = row.status === "STOPPED" || row.status === "CREATED";
 
@@ -90,8 +110,10 @@ function StreamRowActions({ row }: { row: StreamListItem }) {
         output: "hls",
       });
       await queryClient.invalidateQueries({ queryKey: ["streams"] });
+      toast.success(`Stream ${row.channel_id} start requested`);
     } catch (e) {
-      console.error(e);
+      const msg = e instanceof Error ? e.message : "Start failed";
+      toast.error(msg);
     }
   }
 
@@ -99,20 +121,35 @@ function StreamRowActions({ row }: { row: StreamListItem }) {
     try {
       await streamStop(row.channel_id);
       await queryClient.invalidateQueries({ queryKey: ["streams"] });
+      toast.success(`Stream ${row.channel_id} stop requested`);
     } catch (e) {
-      console.error(e);
+      const msg = e instanceof Error ? e.message : "Stop failed";
+      toast.error(msg);
     }
   }
 
   return (
     <div className="flex gap-2">
-      {isStopped && (
-        <Button size="sm" variant="default" onClick={handleStart}>
+      <Button size="sm" variant="outline" asChild>
+        <Link href={`/streams/${row.channel_id}`}>Detail</Link>
+      </Button>
+      {canRunCommands && isStopped && (
+        <Button
+          size="sm"
+          variant="default"
+          onClick={handleStart}
+          title="STOPPED/CREATED 상태에서만 Start 가능"
+        >
           Start
         </Button>
       )}
-      {isRunning && (
-        <Button size="sm" variant="destructive" onClick={handleStop}>
+      {canRunCommands && isRunning && (
+        <Button
+          size="sm"
+          variant="destructive"
+          onClick={handleStop}
+          title="RUNNING 스트림 중단"
+        >
           Stop
         </Button>
       )}
@@ -120,71 +157,127 @@ function StreamRowActions({ row }: { row: StreamListItem }) {
   );
 }
 
+const STREAMS_PAGE_LIMIT = 100;
+const LARGE_TABLE_WARNING = 1000;
+
 export function StreamTable() {
-  const { data: streams = [], isLoading, error } = useQuery({
-    ...streamListQueryOptions,
-    queryFn: fetchStreams,
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("");
+  const listParams = { limit: STREAMS_PAGE_LIMIT };
+
+  const { data: streams = [], isLoading, error, refetch } = useQuery({
+    ...streamListQueryOptions(listParams),
+    queryFn: () => fetchStreams(listParams),
   });
 
+  const filteredData = useMemo(() => {
+    let list = streams;
+    if (statusFilter) {
+      list = list.filter((s) => s.status === statusFilter);
+    }
+    if (search.trim()) {
+      const v = search.toLowerCase().trim();
+      list = list.filter(
+        (s) =>
+          s.channel_id.toLowerCase().includes(v) ||
+          (s.assigned_worker_id ?? "").toLowerCase().includes(v)
+      );
+    }
+    return [...list].sort((a, b) => {
+      const ta = a.updated_at ? new Date(a.updated_at).getTime() : 0;
+      const tb = b.updated_at ? new Date(b.updated_at).getTime() : 0;
+      return tb - ta;
+    });
+  }, [streams, statusFilter, search]);
+
   const table = useReactTable({
-    data: streams,
+    data: filteredData,
     columns,
     getCoreRowModel: getCoreRowModel(),
   });
 
   if (error) {
     return (
-      <div className="rounded-md border border-destructive/50 bg-destructive/10 p-4 text-destructive">
-        Failed to load streams: {error.message}
-      </div>
+      <ErrorState
+        message={`Failed to load streams: ${error.message}`}
+        onRetry={() => refetch()}
+      />
     );
   }
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-12 text-muted-foreground">
-        Loading streams…
-      </div>
-    );
+    return <LoadingTable rows={5} />;
   }
 
   if (streams.length === 0) {
     return (
-      <div className="rounded-md border border-border p-8 text-center text-muted-foreground">
-        No streams. Start one via API or mock.
-      </div>
+      <EmptyState
+        title="No streams"
+        description="Start one via API or use mock mode."
+      />
     );
   }
 
+  const showLargeWarning = streams.length >= LARGE_TABLE_WARNING;
+  const showLimitNotice = streams.length >= STREAMS_PAGE_LIMIT;
+
   return (
-    <Table>
-      <TableHeader>
-        {table.getHeaderGroups().map((headerGroup) => (
-          <TableRow key={headerGroup.id}>
-            {headerGroup.headers.map((header) => (
-              <TableHead key={header.id}>
-                {header.isPlaceholder
-                  ? null
-                  : flexRender(
-                      header.column.columnDef.header,
-                      header.getContext()
-                    )}
-              </TableHead>
-            ))}
-          </TableRow>
-        ))}
-      </TableHeader>
-      <TableBody>
-        {table.getRowModel().rows.map((row) => (
-          <TableRow key={row.id}>
-            {row.getVisibleCells().map((cell) => (
-              <TableCell key={cell.id}>
-                {flexRender(cell.column.columnDef.cell, cell.getContext())}
-              </TableCell>
-            ))}
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+    <div className="space-y-4">
+      {(showLargeWarning || showLimitNotice) && (
+        <div className="rounded border border-amber-500/50 bg-amber-500/10 px-3 py-2 text-sm text-amber-800 dark:text-amber-200">
+          {showLargeWarning
+            ? `표시 제한 ${STREAMS_PAGE_LIMIT}건. 1,000건 이상일 수 있습니다. 필터로 범위를 좁히세요.`
+            : `표시 ${streams.length}건 (limit=${STREAMS_PAGE_LIMIT}). 더 보려면 필터 사용.`}
+        </div>
+      )}
+      <div className="flex flex-wrap items-center gap-4">
+        <Input
+          placeholder="Search by channel ID or worker..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="max-w-xs"
+        />
+        <Select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className="w-40"
+        >
+          {STATUS_OPTIONS.map((o) => (
+            <option key={o.value || "all"} value={o.value}>
+              {o.label}
+            </option>
+          ))}
+        </Select>
+      </div>
+      <Table>
+        <TableHeader>
+          {table.getHeaderGroups().map((headerGroup) => (
+            <TableRow key={headerGroup.id}>
+              {headerGroup.headers.map((header) => (
+                <TableHead key={header.id}>
+                  {header.isPlaceholder
+                    ? null
+                    : flexRender(
+                        header.column.columnDef.header,
+                        header.getContext()
+                      )}
+                </TableHead>
+              ))}
+            </TableRow>
+          ))}
+        </TableHeader>
+        <TableBody>
+          {table.getRowModel().rows.map((row) => (
+            <TableRow key={row.id}>
+              {row.getVisibleCells().map((cell) => (
+                <TableCell key={cell.id}>
+                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                </TableCell>
+              ))}
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
   );
 }
