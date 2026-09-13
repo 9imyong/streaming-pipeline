@@ -32,9 +32,11 @@ export interface RequestConfig {
   signal?: AbortSignal;
 }
 
+// RequestInit.headers 는 Headers/배열 형태도 허용해, 그대로 교차하면
+// Record<string, string> 으로 전개할 수 없다. RequestConfig 쪽 정의를 쓴다.
 export async function apiClient<T>(
   path: string,
-  options: RequestInit & RequestConfig = {}
+  options: Omit<RequestInit, "headers"> & RequestConfig = {}
 ): Promise<T> {
   const { timeout = DEFAULT_TIMEOUT_MS, headers = {}, signal, ...init } = options;
   const baseUrl = getBaseUrl().replace(/\/$/, "");

@@ -77,7 +77,7 @@ export function useEventsRealtime(
   useEffect(() => {
     let cancelled = false;
     setIsLoading(true);
-    fetchEvents(fetchParams)
+    fetchEvents(fetchParamsRef.current)
       .then((list) => {
         if (!cancelled) setEvents(list);
       })
