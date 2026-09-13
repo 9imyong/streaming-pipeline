@@ -18,7 +18,7 @@ RUN mkdir -p /wheelhouse
 # COPY legacy/requirements.txt /build/legacy/requirements.txt
 # uv로 휠/소스 패키지 다운로드 (런타임 네트워크 없이 설치 가능)
 # --only-binary=:all: 를 강제하면 일부 패키지(환경별 wheel 없음)에서 실패할 수 있어 기본은 미적용
-RUN pip download -d /wheelhouse -r /build/legacy/requirements.txt
+# RUN pip download -d /wheelhouse -r /build/legacy/requirements.txt  # legacy 제거로 비활성화
 # 2) 네가 Dockerfile에서 추가로 설치하던 패키지도 wheelhouse에 다운로드
 # (런타임에서 pip install로 설치할 예정)
 RUN pip download -d /wheelhouse \

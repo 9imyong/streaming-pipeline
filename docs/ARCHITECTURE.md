@@ -117,6 +117,6 @@
 - **개요**: 영상 스트리밍 AI 파이프라인 서버. CCTV RTSP 수신 → GStreamer/HLS 변환 → AI 검출(Celery 워커).
 - **레이어**: api/, application/, domain/, infrastructure/, worker/
 - **흐름**: API → Redis 태스크 목록 + Celery 발행 → Worker에서 GStreamer 기동 → HLS `/data/playlist/streaming/{video_id}/` 서빙
-- **진입점**: `app.main`에서 `legacy` 앱 로드, `/health` 추가
+- **진입점**: `app.gateway.main:app` (FastAPI Gateway)
 
 상세는 `docs/diagrams/`, `docs/CODING_CONVENTIONS_9IMYONG.md` 참고.
