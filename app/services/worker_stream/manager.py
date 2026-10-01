@@ -44,11 +44,17 @@ def _is_lease_valid(row: Optional[dict], worker_id: str) -> bool:
     if (row.get("assigned_worker_id") or "") != worker_id:
         return False
     expires = row.get("lease_expires_at")
-    if not expires:
-        return True
-    if hasattr(expires, "timestamp"):
-        return datetime.now(timezone.utc).timestamp() < expires.timestamp()
-    return True  # 문자열이면 보수적으로 유효로 간주
+    if isinstance(expires, str):
+        try:
+            expires = datetime.fromisoformat(expires)
+        except ValueError:
+            return False
+    if not isinstance(expires, datetime):
+        return False
+    # MySQL DATETIME values are UTC but have no tzinfo.
+    if expires.tzinfo is None:
+        expires = expires.replace(tzinfo=timezone.utc)
+    return datetime.now(timezone.utc) < expires
 
 
 class StreamEventPublisher:
@@ -150,7 +156,7 @@ class StreamProcessManager:
                     if attempt < 5:
                         await asyncio.sleep(1.0)
                         row = await self.stream_repo.get(channel_id)
-                if not _is_lease_valid(row, self.worker_id):
+                if (row or {}).get("desired_state") == "stopped" or not _is_lease_valid(row, self.worker_id):
                     logger.debug("start skipped no lease channel_id=%s after retries", channel_id)
                     continue
                 spec = self._parse_spec(cmd)
@@ -198,9 +204,15 @@ class StreamProcessManager:
         self._procs[spec.channel_id] = handle
         # 시작 직후 lease 한 번 갱신 (갱신 루프는 10초마다라 첫 만료 방지)
         try:
-            await self.lease_store.renew(spec.channel_id, self.worker_id, self.lease_ttl_seconds)
+            renewed = await self.lease_store.renew(
+                spec.channel_id, self.worker_id, self.lease_ttl_seconds
+            )
         except Exception as e:
             logger.warning("immediate lease renew failed channel_id=%s: %s", spec.channel_id, e)
+            renewed = False
+        if not renewed:
+            await self.stop_stream(spec.channel_id, reason="lease_lost")
+            return
         # 러너가 bus로 STARTED 발행하면 중복 방지
         if not getattr(proc, "publishes_lifecycle_events", False):
             await self.event_publisher.stream_event(
@@ -245,7 +257,13 @@ class StreamProcessManager:
         while not self._stop_event.is_set():
             await asyncio.sleep(self.lease_renew_interval_sec)
             for channel_id in list(self._procs.keys()):
-                renewed = await self.lease_store.renew(channel_id, self.worker_id, self.lease_ttl_seconds)
+                try:
+                    renewed = await self.lease_store.renew(
+                        channel_id, self.worker_id, self.lease_ttl_seconds
+                    )
+                except Exception:
+                    logger.exception("lease renew error channel_id=%s", channel_id)
+                    renewed = False
                 if not renewed:
                     logger.warning(
                         "lease renew failed channel_id=%s stopping",
@@ -371,8 +389,11 @@ class StreamProcessManager:
                     ),
                 )
                 await asyncio.sleep(delay)
+                # STOP may remove this handle while the restart backoff is sleeping.
+                if self._procs.get(channel_id) is not handle or handle.stopping:
+                    continue
                 row = await self.stream_repo.get(channel_id)
-                if not _is_lease_valid(row, self.worker_id):
+                if (row or {}).get("desired_state") == "stopped" or not _is_lease_valid(row, self.worker_id):
                     await self.stop_stream(channel_id, reason="lease_lost")
                     continue
                 try:

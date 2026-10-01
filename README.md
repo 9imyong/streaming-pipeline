@@ -158,13 +158,19 @@ ai.events
 uv sync && uv run uvicorn app.gateway.main:app --reload --port 8000
 
 # docker-compose (전체 스택: API, Orchestrator, Worker, Kafka, MySQL)
-docker compose -f docker/docker-compose.yml up -d
+make dev-up
 
 # KIND
 ./scripts/kind_create.sh
 ./scripts/kind_load_images.sh
 ./scripts/deploy_k8s.sh
 ```
+
+`make dev-up`은 `.env`가 없으면 `.env.example`에서 생성하고 이미지를 빌드한 뒤 전체 스택을 시작합니다.
+최초 MySQL 기동 시 `docker/db/init.sql`로 테이블을 자동 생성합니다.
+UI는 http://localhost:3000, API 문서는 http://localhost:8000/docs 에서 확인합니다.
+상태 확인은 `make ps`, 로그는 `make logs SERVICES='api stream-worker'`, 종료는 `make dev-down`입니다.
+전체 명령은 `make help`를 참고합니다.
 
 ### 8.1 스모크 테스트 (START/STOP → Kafka → Orchestrator)
 

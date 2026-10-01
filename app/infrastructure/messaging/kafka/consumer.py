@@ -42,6 +42,7 @@ class KafkaConsumerBase:
                     group_id=self._group_id,
                     value_deserializer=lambda v: json.loads(v.decode("utf-8")) if v else {},
                     auto_offset_reset="earliest",
+                    enable_auto_commit=False,
                 )
                 try:
                     await c.start()
@@ -87,6 +88,12 @@ class KafkaConsumerBase:
             if one is None:
                 continue
             yield one
+            # Commit only after the caller finishes processing the yielded message.
+            if self._consumer:
+                from aiokafka import TopicPartition
+
+                topic, partition, offset, _value = one
+                await self._consumer.commit({TopicPartition(topic, partition): offset + 1})
 
     async def run_forever(
         self,
@@ -94,10 +101,11 @@ class KafkaConsumerBase:
     ) -> None:
         """메시지 수신 시 handler(topic, value) 호출. commit은 handler 성공 후."""
         async for topic, _part, offset, value in self.iterate():
-            try:
-                await handler(topic, value)
-                if self._consumer:
-                    await self._consumer.commit()
-            except Exception as e:  # noqa: BLE001
-                logger.exception("consumer handler error topic=%s offset=%s: %s", topic, offset, e)
-                # at-least-once: 실패 시 commit 안 함 → 재처리
+            while True:
+                try:
+                    await handler(topic, value)
+                    break
+                except Exception as e:  # noqa: BLE001
+                    logger.exception("consumer handler error topic=%s offset=%s: %s", topic, offset, e)
+                    # Retry this command before reading or committing any later offset.
+                    await asyncio.sleep(KAFKA_CONNECT_SLEEP_SEC)

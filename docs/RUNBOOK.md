@@ -65,3 +65,12 @@ docker compose logs -f api             # 5xx, command 발행
 - **로컬:** `make dev-up` (또는 `scripts/dev_up.sh`). API: `http://localhost:8000` (또는 compose 포트).
 - **헬스:** Liveness `GET /health/live`, Readiness `GET /health/ready`.
 - **롤백:** docker — 이전 이미지로 `up`; k8s — `kubectl rollout undo deployment/<name>`.
+
+
+## 명령 소비와 Lease 오류 처리
+
+- **Kafka 커밋:** 메시지 처리 성공 후 해당 파티션의 다음 오프셋 커밋. 핸들러 실패 시 2초 간격으로 동일 메시지 재시도; 후속 메시지 처리는 성공까지 대기.
+- **지속적인 처리 실패:** Orchestrator/Inference 로그의 `consumer handler error`와 DB·Kafka 연결 상태 확인. 잘못된 메시지를 임의로 건너뛰지 않으며 원인 해결 후 재처리 확인.
+- **Stream Worker ID:** 워커마다 고유하고 재시작 후 유지되는 `WORKER_ID` 지정. 소비 그룹은 `stream-worker-v1-<WORKER_ID>` 사용. 새 그룹의 첫 기동은 보존된 명령을 재조회하며 현재 Lease와 desired_state 확인 후 실행.
+- **Lease 갱신 실패:** 최초 갱신 실패 또는 주기 갱신 예외 시 해당 파이프라인 중지. DB 연결 복구 후 채널 상태·오류 확인 및 START 재요청.
+- **회귀 검증:** 개발 의존성 및 GStreamer 시스템 라이브러리가 설치된 환경에서 `uv run --extra dev pytest -q` 실행.

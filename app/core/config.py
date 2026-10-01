@@ -49,6 +49,11 @@ class Settings(BaseSettings):
 
     # 앱 노출용 (헬스/메트릭 등)
     host_ip: str = Field(default="localhost", alias="HOST_IP")
+    cors_origins: str = Field(
+        default="http://localhost:3000,http://127.0.0.1:3000",
+        alias="CORS_ORIGINS",
+        description="Comma-separated UI origins allowed to call the API",
+    )
 
     @property
     def is_dev(self) -> bool:

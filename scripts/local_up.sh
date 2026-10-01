@@ -1,1 +1,3 @@
-docker compose -f ./docker/docker-compose.streaming.yml up -d
+#!/usr/bin/env bash
+set -euo pipefail
+make -C "$(dirname "$0")/.." dev-up "$@"

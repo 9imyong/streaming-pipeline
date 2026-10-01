@@ -13,10 +13,12 @@ import traceback
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.gateway.routes import health, observability, streams
+from app.core.config import get_settings
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -73,6 +75,16 @@ async def hls_cache_control(request: Request, call_next):
         elif ".ts" in path:
             response.headers["Cache-Control"] = "max-age=2, public"
     return response
+
+
+# Wrap the application so error responses also include CORS headers.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[origin.strip() for origin in get_settings().cors_origins.split(",") if origin.strip()],
+    allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "X-Request-ID", "x-api-key"],
+    expose_headers=["X-Request-ID"],
+)
 
 
 app.include_router(streams.router, prefix="/v1")
